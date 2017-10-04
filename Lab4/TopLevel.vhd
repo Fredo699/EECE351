@@ -38,9 +38,9 @@ entity TopLevel is
 			  DIR_RIGHT  : in  STD_LOGIC := '1';	
 			  DIR_UP     : in  STD_LOGIC := '1';	
 			  DIR_DOWN   : in  STD_LOGIC := '1';	
-			  SSEG_OUT   : out STD_LOGIC_vector(6 downto 0); 
-			  SSEG_P    : out STD_LOGIC; 
-			  SSEG_AN    : out STD_LOGIC_vector(4 downto 0); 
+			  Seg7_SEG   : out STD_LOGIC_vector(6 downto 0); 
+			  Seg7_DP    : out STD_LOGIC; 
+			  Seg7_AN    : out STD_LOGIC_vector(4 downto 0); 
 			  LED        : out STD_LOGIC_vector(7 downto 0) 
 			  );
 end TopLevel;
@@ -208,13 +208,13 @@ begin
 		hex_data_in2 => B_Reg(7 downto 4),
 		hex_data_in3 => B_Reg(3 downto 0),
 		dp_in => "000",
-		seg_out => SSEG_OUT,
+		seg_out => Seg7_SEG,
 		an_out => an_out3_0,
-		dp_out => SSEG_P,
+		dp_out => Seg7_DP,
 		clk => Clk
 	);
 	
-	SSEG_AN <= '1' & an_out3_0;  -- drive 5th anode high
+	Seg7_AN <= '1' & an_out3_0;  -- drive 5th anode high
 
 end Behavioral;
 

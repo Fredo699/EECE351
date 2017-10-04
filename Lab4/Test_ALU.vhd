@@ -56,9 +56,29 @@ ARCHITECTURE behavior OF Test_ALU IS
    signal ALUControl : std_logic_vector(1 downto 0) := (others => '0');
 
  	--Outputs
-   signal result : std_logic_vector(7 downto 0);
+   signal result	 : std_logic_vector(7 downto 0);
    signal ALUFlags : std_logic_vector(3 downto 0);
  
+	type test_vector is record
+		A 				: std_logic_vector(7 downto 0);
+		B 				: std_logic_vector(7 downto 0);
+		ALUControl	: std_logic_Vector(1 downto 0);
+		result		: std_logic_vector(7 downto 0);
+		ALUFlags 	: std_logic_vector(3 downto 0);
+	end record test_vector;
+	
+	type test_data_array is array (natural range<>) of test_vector;
+	
+	constant test_data : test_data_array := (("00000001", "00000001", "00", "00000010", "0000"),
+														  ("01101010", "01101010", "00", "11010100", "1010"),
+														  ("10000000", "10000000", "00", "00000000", "1101"),
+														  ("10101010", "10101010", "00", "01010100", "1100"),
+														  ("01010101", "01010101", "00", "10101010", "1010"),
+														  ("00000001", "00000010", "01", "11111111", "0010"),
+														  ("11111111", "10101010", "10", "10101010", "0010"),
+														  ("10101010", "11111111", "10", "10101010", "0010"),
+														  ("00000000", "10101010", "11", "10101010", "0010"),
+														  ("10101010", "00000000", "11", "10101010", "0010"));
 BEGIN
  
 	-- Instantiate the Unit Under Test (UUT)
@@ -74,13 +94,19 @@ BEGIN
    stim_proc: process
    begin		
       -- hold reset state for 100 ns.
-      wait for 100 ns;	
+      wait for 100 ns;
 
-      wait for <clock>_period*10;
-
-      -- insert stimulus here 
-
-      wait;
+      -- insert stimulus here
+		
+		for k in test_data'range loop
+			A <= test_data(k).A;
+			B <= test_data(k).B;
+			ALUControl <= test_data(k).ALUControl;
+			wait for 100 ns;
+			assert result = test_data(k).result report "Result Error";
+			assert ALUFlags = test_data(k).ALUFlags report "Flags Error";
+		end loop;
+	wait;
    end process;
 
 END;
