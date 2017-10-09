@@ -1,8 +1,8 @@
 ----------------------------------------------------------------------------------
 -- Company:  Binghamton University
--- Engineer: Fred Frey
+-- Engineer: Fred Frey & Caleb Wagoner
 -- 
--- Create Date:    10:57:35 09/29/2017 
+-- Create Date:    13:09:50 10/09/2017 
 -- Design Name: 
 -- Module Name:    RegisterFile - Behavioral 
 -- Project Name: 
@@ -30,60 +30,39 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity RegisterFile is
-	 Generic(addr_size : natural := 4;
-				word_size : natural := 8);
-    Port ( A3 	 		 : in  STD_LOGIC_VECTOR (addr_size-1 downto 0);
-           WD3 	 	 : in  STD_LOGIC_VECTOR (word_size-1 downto 0);
-           A1 	 		 : in  STD_LOGIC_VECTOR (addr_size-1 downto 0);
-           A2	 		 : in  STD_LOGIC_VECTOR (addr_size-1 downto 0);
-			  Reg_15   	 : in  STD_LOGIC_VECTOR (word_size-1 downto 0);
-           WE3   	 	 : in  STD_LOGIC;
-           clk    	 : in  STD_LOGIC;
-           WD3_Out 	 : out  STD_LOGIC_VECTOR (word_size-1 downto 0);
-           R_Data1 	 : out  STD_LOGIC_VECTOR (word_size-1 downto 0);
-			  R_Data2	 : out  STD_LOGIC_VECTOR (word_size-1 downto 0));
+	 Generic (addr_size : natural := 4;
+				 word_size : natural := 8);
+    Port ( W_addr : in  STD_LOGIC_VECTOR (addr_size - 1 downto 0);
+           R_addr : in  STD_LOGIC_VECTOR (addr_size - 1 downto 0);
+           W_data : in  STD_LOGIC_VECTOR (word_size - 1 downto 0);
+           W_en : in  STD_LOGIC;
+			  clk : in std_logic;
+           W_Data_out : out  STD_LOGIC_VECTOR (word_size - 1 downto 0);
+           R_Data : out  STD_LOGIC_VECTOR (word_size - 1 downto 0));
 end RegisterFile;
 
 architecture Behavioral of RegisterFile is
-type regfile_t is array ((2**addr_size)-2 downto 0) of std_logic_vector(word_size-1 downto 0); -- 2^addr - 2 because we use 1 for R15.
 
-signal A3_int : integer;
-signal A1_int : integer;
-signal A2_int : integer;
-
+type regfile_t is array ((2 ** addr_size) - 1  downto 0) of std_logic_vector(word_size - 1 downto 0);
 signal regfile : regfile_t := (others=>(others=>'0'));
 
-begin
+signal w_addr_int : integer := 0;
+signal r_addr_int : integer := 0;
 
-	A3_int <= to_integer(unsigned(A3));
+begin
+	w_addr_int <= to_integer(unsigned(w_addr));
+	r_addr_int <= to_integer(unsigned(r_addr));
 	
-	A1_int <= to_integer(unsigned(A1));
-	A2_int <= to_integer(unsigned(A2));
-	
-	process(clk, WE3, WD3) begin
-		if rising_edge(clk) and WE3 = '1' then
-			regfile(A3_int) <= WD3;
+	process (clk) begin
+		if rising_edge(clk) then
+			if (W_en = '1') then
+				RegFile(to_integer(unsigned(W_addr))) <= W_data;
+			end if;
 		end if;
 	end process;
 	
-	process(A1_int, Reg_15) begin	
-		if A1_int = 2**addr_size - 1 then
-			R_Data <= Reg_15;
-		else
-			R_Data <= regfile(A1_int);
-		end if;
-	end process;
-	
-	process(A2_int, Reg_15) begin	
-		if A2_int = 2**addr_size - 1 then
-			R_Data <= Reg_15;
-		else
-			R_Data <= regfile(A2_int);
-		end if;
-	end process;
-	
-	WD3_Out <= regfile(A3_int);
-	
-	
+	W_data_out <= RegFile(to_integer(unsigned(W_addr)));
+	R_data <= RegFile(to_integer(unsigned(R_addr)));
+
 end Behavioral;
 
