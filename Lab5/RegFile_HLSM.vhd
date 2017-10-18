@@ -29,47 +29,49 @@ architecture Behavioral of RegFile_HLSM is
 
 	-- Declare datapath component
 component Datapath is
-	Port ( W_en : in  STD_LOGIC;
-			  clk : in std_logic;
-           rst_r : in  STD_LOGIC;
-           muxsel : in  STD_LOGIC;
-			  w_addr : in std_logic_vector (3 downto 0);
-			  r_addr : in std_logic_vector (3 downto 0);
-           w_data : in  STD_LOGIC_VECTOR (7 downto 0);
-			  r_data : out std_logic_vector (7 downto 0);
-			  ld_addr : in std_logic;
-			  sig_sum : in std_logic;
-           eq15 : out  STD_LOGIC;
-           HexDisp : out  STD_LOGIC_VECTOR (15 downto 0));
+    Port ( clk : in std_logic;
+			  W_en : in  STD_LOGIC;
+           rst_r : in STD_LOGIC;
+			  muxsel : in std_logic;
+			  ld_addrs : in STD_LOGIC;
+			  ld_sum   : in STD_LOGIC;
+			  Switch : in STD_LOGIC_VECTOR(7 downto 0);
+			  raddr, waddr : out std_logic_vector(3 downto 0);
+			  eq15 : out std_logic;
+			  HexDisp : out std_logic_vector(15 downto 0));
 end component;
 
 	-- Declare controller component
 component Controller is
-	Port ( clk : in  STD_LOGIC;
+    Port ( clk : in  STD_LOGIC;
            bt1 : in  STD_LOGIC;
            bt0 : in  STD_LOGIC;
            bt2 : in  STD_LOGIC;
            eq15 : in  STD_LOGIC;
-           muxsel : out  STD_LOGIC;
-           rst_r : out  STD_LOGIC;
-			  ld_addr : out STD_LOGIC;
-			  sig_sum : out STD_LOGIC;
-           w_en : out  STD_LOGIC;
-           w_data : out  STD_LOGIC_VECTOR (7 downto 0));
+           w_en : out STD_LOGIC;
+			  ld_addrs : out STD_LOGIC;
+			  ld_sum : out STD_LOGIC;
+			  rst_r : out STD_LOGIC;
+			  muxsel : out STD_LOGIC);
 end component;
 
 	-- Signals for interconnections between datapath and controller
-signal w_en, rst_r, muxsel, ld_addr, sig_sum, eq15 : std_logic;
-signal r_data, w_data : std_logic_vector(7 downto 0);
+signal w_en, rst_r, muxsel, ld_addr, ld_sum, eq15, ld_addrs, ld_next : std_logic;
+signal r_data, w_data : std_logic_vector(7 downto 0); -- dummies for datapath.
+signal w_addr_int, r_addr_int : std_logic_vector(3 downto 0); -- dummies for datapath.
 	
 begin
-
 	-- Instantiate Datapath Module
 	dp : Datapath
-		port map(w_en=>w_en, clk=>clk, rst_r=>rst_r, muxsel=>muxsel, w_addr=>w_addr, r_addr=>r_addr,
-					w_data=>switch, r_data=>r_data, ld_addr=>ld_addr, sig_sum=>sig_sum, eq15=>eq15, HexDisp=>HexDisp);
+		port map(clk=>clk, w_en=>w_en, rst_r=>rst_r, muxsel=>muxsel,
+					ld_addrs=>ld_addrs, ld_sum=>ld_sum, Switch=>Switch,
+					eq15=>eq15, HexDisp=>HexDisp,
+					raddr=>r_addr, waddr=>w_addr);
+
+	
 	-- Instantiate Controller Module
-	control : Controller
-		port map(clk=>clk, bt0=>bt0, bt1=>bt1, bt2=>bt2, eq15=>eq15, muxsel=>muxsel, rst_r=>rst_r, ld_addr=>ld_addr,
-					sig_sum=>sig_sum, w_en=>w_en, w_data=>w_data);
+	ctrl : controller
+		port map(clk=>clk, bt0=>btn0, bt1=>btn1, bt2=>btn2, eq15=>eq15, w_en=>w_en, ld_addrs=>ld_addrs, rst_r=>rst_r,
+					muxsel=>muxsel, ld_sum=>ld_sum);
+	
 end Behavioral;

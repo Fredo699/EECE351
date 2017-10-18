@@ -30,18 +30,16 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity Datapath is
-    Port ( W_en : in  STD_LOGIC;
-			  clk : in std_logic;
-           rst_r : in  STD_LOGIC;
-           muxsel : in  STD_LOGIC;
-			  w_addr : in std_logic_vector (3 downto 0);
-			  r_addr : in std_logic_vector (3 downto 0);
-           w_data : in  STD_LOGIC_VECTOR (7 downto 0);
-			  r_data : out std_logic_vector (7 downto 0);
-			  ld_addr : in std_logic;
-			  sig_sum : in std_logic;
-           eq15 : out  STD_LOGIC;
-           HexDisp : out  STD_LOGIC_VECTOR (15 downto 0));
+    Port ( clk : in std_logic;
+			  W_en : in  STD_LOGIC;
+           rst_r : in STD_LOGIC;
+			  muxsel : in std_logic;
+			  ld_addrs : in STD_LOGIC;
+			  ld_sum   : in STD_LOGIC;
+			  Switch : in STD_LOGIC_VECTOR(7 downto 0);
+			  raddr, waddr : out std_logic_vector(3 downto 0);
+			  eq15 : out std_logic;
+			  HexDisp : out std_logic_vector(15 downto 0));
 end Datapath;
 
 architecture Behavioral of Datapath is
@@ -58,60 +56,53 @@ component RegisterFile is
            R_Data : out  STD_LOGIC_VECTOR (word_size - 1 downto 0));
 end component;
 
-signal w_addr_int : std_logic_vector(3 downto 0);
-signal r_addr_int : std_logic_vector(3 downto 0);
-signal w_dout_int : std_logic_vector(7 downto 0);
-signal r_data_int : std_logic_vector(7 downto 0);
-signal w_data_int : std_logic_vector(7 downto 0);
-signal sum    		: unsigned(15 downto 0);
-signal hex_disp : std_logic_vector(15 downto 0);
+signal raddr_reg : std_logic_vector(3 downto 0) := (others=>'0');
+signal waddr_reg : std_logic_vector(3 downto 0) := (others=>'0');
+
+signal wdata_reg : std_logic_vector(7 downto 0);
+signal rdata_reg : std_logic_vector(7 downto 0);
+
+signal sum_reg : unsigned(15 downto 0);
 
 begin
-	r_data <= r_data_int;
-	w_data_int <= w_data;
-	regfile : RegisterFile
-		port map(W_addr=>w_addr_int, w_data=>w_data_int, r_addr=>r_addr_int, clk=>clk, w_en=>w_en,
-				   r_data=>r_data_int, w_data_out=>w_dout_int);
+
+	raddr <= raddr_reg;
+	waddr <= waddr_reg;
 	
+	regfile : RegisterFile
+		port map(W_addr=>waddr_reg, R_addr=>raddr_reg, W_en=>W_en, clk=>clk, W_Data=>Switch, W_Data_out=>wdata_reg,
+					r_data=>rdata_reg);
+
 	process(clk) begin
 		if rising_edge(clk) then
-			if sig_sum = '1' then
-				sum <= sum + unsigned(r_data_int);
-				r_addr_int <= std_logic_vector(unsigned(r_addr_int) + 1);
+			if rst_r = '1' then
+				sum_reg <= to_unsigned(0, 16);
+				raddr_reg <= "0000";
+			elsif ld_addrs = '1' then
+				waddr_reg <= Switch(7 downto 4);
+				raddr_reg <= Switch(3 downto 0);
+			elsif ld_sum = '1' then
+				sum_reg <= sum_reg + unsigned(rdata_reg);
+				raddr_reg <= std_logic_vector(unsigned(raddr_reg) + 1);
 			end if;
 		end if;
-		
-		if r_addr_int = "1111" then
+	end process;
+	
+	process(raddr_reg) begin
+		if raddr_reg = "1111" then
 			eq15 <= '1';
 		else
 			eq15 <= '0';
 		end if;
 	end process;
 	
-	process(clk, w_addr, r_addr) begin
+	process(clk, muxsel, rdata_reg, wdata_reg, sum_reg) begin
 		if rising_edge(clk) then
-			if ld_addr = '1' then
-				w_addr_int <= w_addr;
-				r_addr_int <= r_addr;
+			if muxsel = '0' then
+				HexDisp <= rdata_reg & wdata_reg;
+			else
+				HexDisp <= std_logic_vector(sum_reg);
 			end if;
-			w_data_int <= w_data;
-		end if;
-	end process; 
-	
-	process(clk, w_en) begin
-		if rising_edge(clk) then	
-			if w_en = '1' then
-				regfile(to_integer(unsigned(w_addr_int))) <= W_data;
-			end if;
-		end if;
-	end process;
-	
-	process(muxsel) begin
-		if muxsel = '0' then
-			hex_disp(15 downto 8) <= w_dout_int;
-			hex_disp(7 downto 0) <= r_data_int;
-		else
-			hex_disp <= std_logic_vector(sum);
 		end if;
 	end process;
 

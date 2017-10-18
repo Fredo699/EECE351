@@ -95,7 +95,8 @@ ARCHITECTURE behavior OF Test_TopLevel IS
 		(
 			(x"0", x"0", x"05"),	
 			(x"1", x"0", x"0a"),	
-			(x"2", x"1", x"05"),	
+			(x"2", x"1", x"05"),
+			(x"2", x"1", x"05"),
 			(x"3", x"2", x"0a"),	
 			(x"4", x"3", x"05"),	
 			(x"5", x"4", x"0a"),	
@@ -153,13 +154,7 @@ BEGIN
 	procedure write_RegFile(W_addr, R_addr : std_logic_vector(3 downto 0);
 									W_data : std_logic_vector(7 downto 0)) is
 		begin
-			-- Put write and read address values on switches
---			Switch <= reverse(R_addr) & reverse(W_addr); -- Papilio One code
 			Switch <= W_addr & R_addr;                   -- Papilio Duo code
-			
-			-- Load address registers using button 0
---			wait for 100 ns; 		Button(0) <= '0';       -- Papilio One code
---			wait for 100 ns;		Button(0) <= '1';		wait for 100 ns;
 			wait for 100 ns; 		Button(0) <= '1';       -- Papilio Duo code
 			wait for 100 ns;		Button(0) <= '0';		wait for 100 ns;
 			
@@ -168,9 +163,7 @@ BEGIN
 			Switch <= W_data; 
 			
 			-- Load data into register file using button 1
---			wait for 100 ns;		Button(1) <= '0';       -- Papilio One code
---			wait for 100 ns;		Button(1) <= '1';		wait for 100 ns;
-			wait for 100 ns;		Button(1) <= '1';       -- Papilio Duo code
+			wait for 100 ns;		Button(1) <= '1';
 			wait for 100 ns;		Button(1) <= '0';		wait for 100 ns;
 		end procedure;	
 
@@ -189,7 +182,6 @@ BEGIN
 		-- Calculate the sum of the data in test vectors
 		sum_data;
 		
---		Button <= (others => '1');       -- Papilio One code
       Button <= (others => '0');       -- Papilio Duo code
 		Switch <= (others => '0');
 		-- hold reset state for 100 ns.
@@ -205,8 +197,6 @@ BEGIN
 		end loop;
 		
 		-- Sum the contents of the RegFile using button 2
---		Button(2) <= '0';		wait for 100 ns;       -- Papilio One code
---		Button(2) <= '1';		wait for 100 ns;
 		Button(2) <= '0';		wait for 100 ns;       -- Papilio Duo code
 		Button(2) <= '1';		wait for 100 ns;
 		

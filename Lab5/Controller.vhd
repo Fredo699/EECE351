@@ -35,12 +35,11 @@ entity Controller is
            bt0 : in  STD_LOGIC;
            bt2 : in  STD_LOGIC;
            eq15 : in  STD_LOGIC;
-           muxsel : out  STD_LOGIC;
-           rst_r : out  STD_LOGIC;
-			  ld_addr : out STD_LOGIC;
-			  sig_sum : out STD_LOGIC;
-           w_en : out  STD_LOGIC;
-           w_data : out  STD_LOGIC_VECTOR (7 downto 0));
+           w_en : out STD_LOGIC;
+			  ld_addrs : out STD_LOGIC;
+			  ld_sum : out STD_LOGIC;
+			  rst_r : out STD_LOGIC;
+			  muxsel : out STD_LOGIC);
 end Controller;
 
 architecture Behavioral of Controller is
@@ -50,51 +49,71 @@ signal state 		: state_type := Idle;
 signal next_state : state_type := Idle;
 
 begin
-	process(clk, state) begin
+	process(clk) begin	
+		if rising_edge(clk) then
+			state <= next_state;
+		end if;
+	end process;
+	
+	process(state, bt0, bt1, bt2, eq15) begin
+		ld_addrs <= '0';
+		w_en <= '0';
+		muxsel <= '0';
+		rst_r <= '0';
+		ld_sum <= '0';
 		case state is
 			when Idle =>
-				w_en <= '0';
 				if bt0 = '1' then
-					next_state <= Ld_Addr_reg;
+					next_state <= Ld_addr_reg;
 				elsif bt1 = '1' then
 					next_state <= Write_data;
 				elsif bt2 = '1' then
-					next_state <= Init_Sum;
+					next_state <= Init_sum;
 				else
 					next_state <= Idle;
 				end if;
+				
 			when Ld_addr_reg =>
-				ld_addr <= '1';
-				next_state <= Disp_RegFile;
-			when Disp_RegFile =>
+				ld_addrs <= '1';
+				next_state <= Disp_Regfile;
+				
+			when Write_Data =>
+				w_en <= '1';
+				next_state <= Disp_Regfile;
+				
+			when Disp_Regfile =>
 				muxsel <= '0';
+				ld_addrs <= '0';
+				w_en <= '0';
 				next_state <= Idle;
-			when Write_data =>
-				W_en <= '1';
-				next_state <= Idle;
-			when Init_Sum =>
-				sig_sum <= '1';
+				
+			when Init_sum =>
 				rst_r <= '1';
 				next_state <= Wait1;
+			
 			when Wait1 =>
+				ld_sum <= '0';
+				rst_r <= '0';
 				next_state <= Sum;
+			
 			when Sum =>
 				if eq15 = '1' then
 					next_state <= Disp_Sum;
 				else
+					ld_sum <= '1';
 					next_state <= Wait1;
 				end if;
+			
 			when Disp_Sum =>
 				muxsel <= '1';
-				sig_sum <= '0';
-				if bt1 = '1' then
+				if bt2 = '1' then
 					next_state <= Idle;
 				else
 					next_state <= Disp_Sum;
 				end if;
+			when others =>
+				next_state <= Idle;
 		end case;
 	end process;
-
-
 end Behavioral;
 

@@ -46,12 +46,12 @@ architecture Behavioral of RegisterFile is
 type regfile_t is array ((2 ** addr_size) - 1  downto 0) of std_logic_vector(word_size - 1 downto 0);
 signal regfile : regfile_t := (others=>(others=>'0'));
 
-signal w_addr_int : integer := 0;
-signal r_addr_int : integer := 0;
+--signal w_addr_int : integer := 0;
+--signal r_addr_int : integer := 0;
 
 begin
-	w_addr_int <= to_integer(unsigned(w_addr));
-	r_addr_int <= to_integer(unsigned(r_addr));
+--	w_addr_int <= to_integer(unsigned(w_addr));
+--	r_addr_int <= to_integer(unsigned(r_addr));
 	
 	process (clk) begin
 		if rising_edge(clk) then
