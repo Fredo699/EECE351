@@ -18,7 +18,7 @@ use ieee.Math_Real.all;
 entity DivideByN is
 	 Generic ( N : positive := 64 ); -- N = divide by value
     Port ( clk_in : in  STD_LOGIC;
-           clk_out : out  STD_LOGIC);
+           clk_out : out  STD_LOGIC := '0');
 end DivideByN;
 
 architecture Behavioral of DivideByN is
@@ -32,15 +32,19 @@ architecture Behavioral of DivideByN is
 	
 begin
 
-	process(counter, clk_in) begin
+	process(clk_in) begin
+		if rising_edge(clk_in) then	
+			counter <= counter + 1;
+		end if;
+	end process;
+	
+	process(clk_in, counter) begin
 		if rising_edge(clk_in) then
-		counter <= counter + 1;
-			if counter = N then
+			if counter = N - 1 then
 				clk_out <= '1';
 			else
 				clk_out <= '0';
 			end if;
 		end if;
-	end process;	
-	
+	end process;
 end Behavioral;

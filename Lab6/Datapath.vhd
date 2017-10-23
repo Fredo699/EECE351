@@ -22,7 +22,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx primitives in this code.
@@ -31,55 +31,72 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity Datapath is
     Port ( clk : in STD_LOGIC;
-			  MISO : in  STD_LOGIC;
            Inc_count : in  STD_LOGIC;
-           adc_number : in  STD_LOGIC;
-           ld_control : in  STD_LOGIC;
+           ADC_Number : in  STD_LOGIC_VECTOR(2 downto 0);
+           ld_ctrl : in  STD_LOGIC;
            ld_mosi : in  STD_LOGIC;
+			  ld_data : in STD_LOGIC;
+			  ld_adc : in STD_LOGIC;
            shift_ctrl : in  STD_LOGIC;
 			  rst_count : in STD_LOGIC;
-			  MOSI : out  STD_LOGIC;
-           eq0 : out  STD_LOGIC;
+			  SPI_MISO : in STD_LOGIC;
+			  SPI_MOSI : out  STD_LOGIC := '0';
+           eq16 : out  STD_LOGIC;
            eq1 : out  STD_LOGIC;
-           eq4 : out  STD_LOGIC);
+           eq4 : out  STD_LOGIC;
+			  ADC_data_out : out STD_LOGIC_VECTOR(11 downto 0));
 end Datapath;
 
 architecture Behavioral of Datapath is
 
-signal counter : unsigned(3 downto 0) := 0;
+signal data_reg : std_logic_vector(11 downto 0);
+signal counter : unsigned(4 downto 0) := to_unsigned(0, 5);
 signal ctrl : std_logic_vector( 3 downto 0) := (others=>'0');
-signal spi_mosi : std_logic := '0';
 
 begin
+	
 	process (clk) begin
 		if rising_edge(clk) then
 			if rst_count = '1' then
-				counter <= 0;
-			elsif inc_counter = '1' then
-				counter <= counter + 1; 
+				counter <= to_unsigned(0, 5);
+			elsif inc_count = '1' then
+				counter <= counter + 1;
 			end if;
+			
+			if ld_mosi = '1' then
+				SPI_MOSI <= ctrl(3);
+			end if;
+			
+			if ld_ctrl = '1' then
+				if shift_ctrl = '0' then
+					ctrl <= '0' & ADC_Number;
+				else
+					ctrl <= ctrl(2 downto 0) & '0';
+				end if;
+			end if;
+			
+			if ld_data = '1' then	
+				data_reg <= data_reg(10 downto 0) & SPI_MISO;
+			end if;
+			
+			if ld_adc = '1' then
+				ADC_data_out <= data_reg;
+			end if;
+			
 		end if;
 	end process;
 	
 	process (counter) begin
-		if counter = 0 then
-			eq0 <= '1';
-			eq1 <= '0';
-			eq4 <= '0';
+		eq1 <= '0';
+		eq4 <= '0';
+		eq16 <= '0';
+		if counter = 16 then
+			eq16 <= '1';
 		elsif counter = 1 then
-			eq0 <= '0';
 			eq1 <= '1';
-			eq4 <= '0';
 		elsif counter = 4 then
-			eq0 <= '0';
-			eq1 <= '0';
 			eq4 <= '1';
-		else 
-			eq0 <= '0';
-			eq1 <= '0';
-			eq4 <= '0';
 		end if;
 	end process;
-
 end Behavioral;
 
