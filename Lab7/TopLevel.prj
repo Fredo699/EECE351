@@ -1,0 +1,8 @@
+vhdl work "ADC_Datapath.vhd"
+vhdl work "ADC_Controller.vhd"
+vhdl work "HEXon7segDisp.vhd"
+vhdl work "DivideByN.vhd"
+vhdl work "DeltaSigma_DAC.vhd"
+vhdl work "DAC_Test_Source.vhd"
+vhdl work "ADC_Interface.vhd"
+vhdl work "TopLevel.vhd"

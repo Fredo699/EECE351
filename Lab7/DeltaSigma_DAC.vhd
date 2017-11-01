@@ -23,10 +23,10 @@ entity DeltaSigma_DAC is
 end DeltaSigma_DAC;
 
 architecture Behavioral of DeltaSigma_DAC is
-	signal DeltaB      : unsigned(MSB+2 downto 0);
-	signal Delta_Adder : unsigned(MSB+2 downto 0);
-	signal Sigma_Adder : unsigned(MSB+2 downto 0);
-	signal Sigma_Reg   : unsigned(MSB+2 downto 0) := to_unsigned(512, MSB+3);
+	signal DeltaB      : unsigned(MSB downto 0);
+	signal Delta_Adder : unsigned(MSB downto 0);
+	signal Sigma_Adder : unsigned(MSB downto 0);
+	signal Sigma_Reg   : unsigned(MSB downto 0) := to_unsigned(512, MSB+1);
 
 begin
 	DeltaB <= (9 downto 8 => Sigma_Reg(9), others=>'0');

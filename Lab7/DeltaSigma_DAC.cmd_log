@@ -1,0 +1,1 @@
+xst -intstyle ise -ifn "/home/fred/git/EECE151/Lab7/DeltaSigma_DAC.xst" -ofn "/home/fred/git/EECE151/Lab7/DeltaSigma_DAC.syr" 
