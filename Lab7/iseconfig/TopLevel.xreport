@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <report-views version="2.0" >
  <header>
-  <DateModified>2017-11-01T14:48:12</DateModified>
-  <ModuleName>DeltaSigma_DAC</ModuleName>
-  <SummaryTimeStamp>2017-11-01T14:47:50</SummaryTimeStamp>
+  <DateModified>2017-11-06T12:28:55</DateModified>
+  <ModuleName>TopLevel</ModuleName>
+  <SummaryTimeStamp>2017-11-06T11:48:27</SummaryTimeStamp>
   <SavedFilePath>/home/fred/git/EECE151/Lab7/iseconfig/TopLevel.xreport</SavedFilePath>
   <ImplementationReportsDirectory>/home/fred/git/EECE151/Lab7/</ImplementationReportsDirectory>
   <DateInitialized>2017-11-01T14:48:12</DateInitialized>

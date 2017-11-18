@@ -5,7 +5,7 @@ Parameter TMPDIR set to xst/projnav.tmp
 
 
 Total REAL time to Xst completion: 0.00 secs
-Total CPU time to Xst completion: 0.08 secs
+Total CPU time to Xst completion: 0.07 secs
  
 --> 
 Parameter xsthdpdir set to xst
@@ -102,12 +102,17 @@ DSP48 Utilization Ratio            : 100
 Auto BRAM Packing                  : NO
 Slice Utilization Ratio Delta      : 5
 
+---- Other Options
+Cores Search Directories           : {"ipcore_dir"  }
+
 =========================================================================
 
 
 =========================================================================
 *                          HDL Parsing                                  *
 =========================================================================
+Analyzing Verilog file "/home/fred/git/EECE151/Lab7/ipcore_dir/dcm1.v" into library work
+Parsing module <dcm1>.
 Parsing VHDL file "/home/fred/git/EECE151/Lab7/ADC_Datapath.vhd" into library work
 Parsing entity <Datapath>.
 Parsing architecture <Behavioral> of entity <datapath>.
@@ -148,7 +153,18 @@ Elaborating entity <Datapath> (architecture <Behavioral>) from library <work>.
 Elaborating entity <Controller> (architecture <Behavioral>) from library <work>.
 
 Elaborating entity <HEXon7segDisp> (architecture <Behavioral>) from library <work>.
-WARNING:HDLCompiler:89 - "/home/fred/git/EECE151/Lab7/TopLevel.vhd" Line 79: <dcm1> remains a black-box since it has no binding entity.
+Going to verilog side to elaborate module dcm1
+
+Elaborating module <dcm1>.
+
+Elaborating module <PLL_BASE(BANDWIDTH="OPTIMIZED",CLK_FEEDBACK="CLKFBOUT",COMPENSATION="INTERNAL",DIVCLK_DIVIDE=1,CLKFBOUT_MULT=15,CLKFBOUT_PHASE=0.0,CLKOUT0_DIVIDE=15,CLKOUT0_PHASE=0.0,CLKOUT0_DUTY_CYCLE=0.5,CLKOUT1_DIVIDE=5,CLKOUT1_PHASE=0.0,CLKOUT1_DUTY_CYCLE=0.5,CLKIN_PERIOD=31.25,REF_JITTER=0.01)>.
+WARNING:HDLCompiler:1127 - "/home/fred/git/EECE151/Lab7/ipcore_dir/dcm1.v" Line 118: Assignment to clkout2_unused ignored, since the identifier is never used
+WARNING:HDLCompiler:1127 - "/home/fred/git/EECE151/Lab7/ipcore_dir/dcm1.v" Line 119: Assignment to clkout3_unused ignored, since the identifier is never used
+WARNING:HDLCompiler:1127 - "/home/fred/git/EECE151/Lab7/ipcore_dir/dcm1.v" Line 120: Assignment to clkout4_unused ignored, since the identifier is never used
+WARNING:HDLCompiler:1127 - "/home/fred/git/EECE151/Lab7/ipcore_dir/dcm1.v" Line 121: Assignment to clkout5_unused ignored, since the identifier is never used
+
+Elaborating module <BUFG>.
+Back to vhdl to continue elaboration
 
 Elaborating entity <DeltaSigma_DAC> (architecture <Behavioral>) with generics from library <work>.
 
@@ -255,23 +271,29 @@ Synthesizing Unit <HEXon7segDisp>.
 	inferred   4 Multiplexer(s).
 Unit <HEXon7segDisp> synthesized.
 
+Synthesizing Unit <dcm1>.
+    Related source file is "/home/fred/git/EECE151/Lab7/ipcore_dir/dcm1.v".
+    Summary:
+	no macro.
+Unit <dcm1> synthesized.
+
 Synthesizing Unit <DeltaSigma_DAC>.
     Related source file is "/home/fred/git/EECE151/Lab7/DeltaSigma_DAC.vhd".
         MSB = 11
     Found 1-bit register for signal <DAC_output>.
-    Found 12-bit register for signal <Sigma_Reg>.
-    Found 12-bit adder for signal <Delta_Adder> created at line 33.
-    Found 12-bit adder for signal <Sigma_Adder> created at line 34.
+    Found 14-bit register for signal <Sigma_Reg>.
+    Found 14-bit adder for signal <Delta_Adder> created at line 33.
+    Found 14-bit adder for signal <Sigma_Adder> created at line 34.
     Summary:
 	inferred   2 Adder/Subtractor(s).
-	inferred  13 D-type flip-flop(s).
+	inferred  15 D-type flip-flop(s).
 Unit <DeltaSigma_DAC> synthesized.
 
 Synthesizing Unit <DAC_Test_Source>.
     Related source file is "/home/fred/git/EECE151/Lab7/DAC_Test_Source.vhd".
         MSB = 11
     Found 12-bit register for signal <voltage>.
-    Found 12-bit adder for signal <voltage[11]_GND_17_o_add_1_OUT> created at line 31.
+    Found 12-bit adder for signal <voltage[11]_GND_21_o_add_1_OUT> created at line 31.
     Summary:
 	inferred   1 Adder/Subtractor(s).
 	inferred  12 D-type flip-flop(s).
@@ -286,13 +308,15 @@ Macro Statistics
  16x7-bit single-port Read Only RAM                    : 1
 # Adders/Subtractors                                   : 6
  11-bit adder                                          : 1
- 12-bit adder                                          : 3
+ 12-bit adder                                          : 1
+ 14-bit adder                                          : 2
  5-bit adder                                           : 1
  6-bit adder                                           : 1
 # Registers                                            : 11
  1-bit register                                        : 3
  11-bit register                                       : 1
- 12-bit register                                       : 4
+ 12-bit register                                       : 3
+ 14-bit register                                       : 1
  4-bit register                                        : 1
  5-bit register                                        : 1
  6-bit register                                        : 1
@@ -317,6 +341,10 @@ Unit <DAC_Test_Source> synthesized (advanced).
 Synthesizing (advanced) Unit <Datapath>.
 The following registers are absorbed into counter <counter>: 1 register on signal <counter>.
 Unit <Datapath> synthesized (advanced).
+
+Synthesizing (advanced) Unit <DeltaSigma_DAC>.
+The following registers are absorbed into accumulator <Sigma_Reg>: 1 register on signal <Sigma_Reg>.
+Unit <DeltaSigma_DAC> synthesized (advanced).
 
 Synthesizing (advanced) Unit <DivideByN>.
 The following registers are absorbed into counter <counter>: 1 register on signal <counter>.
@@ -355,15 +383,17 @@ Macro Statistics
 # RAMs                                                 : 2
  16x4-bit single-port distributed Read Only RAM        : 1
  16x7-bit single-port distributed Read Only RAM        : 1
-# Adders/Subtractors                                   : 2
- 12-bit adder                                          : 2
+# Adders/Subtractors                                   : 1
+ 14-bit adder                                          : 1
 # Counters                                             : 4
  11-bit up counter                                     : 1
  12-bit up counter                                     : 1
  5-bit up counter                                      : 1
  6-bit up counter                                      : 1
-# Registers                                            : 43
- Flip-Flops                                            : 43
+# Accumulators                                         : 1
+ 14-bit up accumulator                                 : 1
+# Registers                                            : 31
+ Flip-Flops                                            : 31
 # Multiplexers                                         : 9
  1-bit 2-to-1 multiplexer                              : 3
  1-bit 4-to-1 multiplexer                              : 4
@@ -377,15 +407,6 @@ Macro Statistics
 *                         Low Level Synthesis                           *
 =========================================================================
 Analyzing FSM <MFsm> for best encoding.
-Optimizing FSM <FSM_2> on signal <shift_state[1:2]> with user encoding.
-------------------------
- State      | Encoding
-------------------------
- clear      | 00
- wait_shift | 01
- count      | 10
-------------------------
-Analyzing FSM <MFsm> for best encoding.
 Optimizing FSM <FSM_1> on signal <data_state[1:2]> with user encoding.
 ------------------------
  State      | Encoding
@@ -393,6 +414,15 @@ Optimizing FSM <FSM_1> on signal <data_state[1:2]> with user encoding.
  load_data  | 00
  wait_data  | 01
  shift_data | 10
+------------------------
+Analyzing FSM <MFsm> for best encoding.
+Optimizing FSM <FSM_2> on signal <shift_state[1:2]> with user encoding.
+------------------------
+ State      | Encoding
+------------------------
+ clear      | 00
+ wait_shift | 01
+ count      | 10
 ------------------------
 Analyzing FSM <MFsm> for best encoding.
 Optimizing FSM <FSM_0> on signal <control_state[1:2]> with user encoding.
@@ -403,33 +433,7 @@ Optimizing FSM <FSM_0> on signal <control_state[1:2]> with user encoding.
  shift_control | 01
  wait_control  | 10
 ---------------------------
-WARNING:Xst:3002 - This design contains one or more registers/latches that are directly
-   incompatible with the Spartan6 architecture. The two primary causes of this is
-   either a register or latch described with both an asynchronous set and
-   asynchronous reset, or a register or latch described with an asynchronous
-   set or reset which however has an initialization value of the opposite 
-   polarity (i.e. asynchronous reset with an initialization value of 1).
-    While this circuit can be built, it creates a sub-optimal implementation
-   in terms of area, power and performance. For a more optimal implementation
-   Xilinx highly recommends one of the following:
-
-          1) Remove either the set or reset from all registers and latches
-             if not needed for required functionality
-          2) Modify the code in order to produce a synchronous set
-             and/or reset (both is preferred)
-          3) Ensure all registers have the same initialization value as the
-             described asynchronous set or reset polarity
-          4) Use the -async_to_sync option to transform the asynchronous
-             set/reset to synchronous operation
-             (timing simulation highly recommended when using this option)
-
-  Please refer to http://www.xilinx.com search string "Spartan6 asynchronous set/reset" for more details.
-
-  List of register instances with asynchronous set or reset and opposite initialization value:
-    Sigma_Reg_9 in unit <DeltaSigma_DAC>
-
-
-Optimizing unit <DeltaSigma_DAC> ...
+INFO:Xst:1901 - Instance dcm1_1/pll_base_inst in unit dcm1_1/pll_base_inst of type PLL_BASE has been replaced by PLL_ADV
 
 Optimizing unit <TopLevel> ...
 
@@ -438,11 +442,8 @@ INFO:Xst:2261 - The FF/Latch <DivideByN_1/counter_0> in Unit <TopLevel> is equiv
 INFO:Xst:3203 - The FF/Latch <DivideByN_1/counter_1> in Unit <TopLevel> is the opposite to the following FF/Latch, which will be removed : <HEXon7segDisp1/Counter_1> 
 
 Mapping all equations...
-WARNING:Xst:2036 - Inserting OBUF on port <LED<0>> driven by black box <dcm1>. Possible simulation mismatch.
 Building and optimizing final netlist ...
 Found area constraint ratio of 100 (+ 5) on block TopLevel, actual ratio is 2.
-WARNING:Xst:1426 - The value init of the FF/Latch DeltaSigma_DAC1/Sigma_Reg_9_LD hinder the constant cleaning in the block TopLevel.
-   You should achieve better results by setting this init to 0.
 
 Final Macro Processing ...
 
@@ -450,8 +451,8 @@ Final Macro Processing ...
 Final Register Report
 
 Macro Statistics
-# Registers                                            : 82
- Flip-Flops                                            : 82
+# Registers                                            : 83
+ Flip-Flops                                            : 83
 
 =========================================================================
 
@@ -474,34 +475,34 @@ Top Level Output File Name         : TopLevel.ngc
 
 Primitive and Black Box Usage:
 ------------------------------
-# BELS                             : 167
+# BELS                             : 163
 #      GND                         : 1
-#      INV                         : 7
+#      INV                         : 8
 #      LUT1                        : 20
-#      LUT2                        : 14
-#      LUT3                        : 26
-#      LUT4                        : 20
-#      LUT5                        : 9
-#      LUT6                        : 4
-#      MUXCY                       : 32
+#      LUT2                        : 6
+#      LUT3                        : 18
+#      LUT4                        : 26
+#      LUT5                        : 8
+#      LUT6                        : 5
+#      MUXCY                       : 34
+#      MUXF7                       : 1
 #      VCC                         : 1
-#      XORCY                       : 33
+#      XORCY                       : 35
 # FlipFlops/Latches                : 83
-#      FD                          : 24
-#      FDC                         : 13
+#      FD                          : 23
 #      FDE                         : 40
+#      FDR                         : 15
 #      FDRE                        : 5
-#      LD                          : 1
 # Shift Registers                  : 1
 #      SRL16E                      : 1
-# Clock Buffers                    : 1
-#      BUFG                        : 1
+# Clock Buffers                    : 3
+#      BUFG                        : 3
 # IO Buffers                       : 31
 #      IBUF                        : 5
 #      IBUFG                       : 1
 #      OBUF                        : 25
 # Others                           : 1
-#      dcm1                        : 1
+#      PLL_ADV                     : 1
 
 Device utilization summary:
 ---------------------------
@@ -511,24 +512,25 @@ Selected Device : 6slx9tqg144-2
 
 Slice Logic Utilization: 
  Number of Slice Registers:              83  out of  11440     0%  
- Number of Slice LUTs:                  101  out of   5720     1%  
-    Number used as Logic:               100  out of   5720     1%  
+ Number of Slice LUTs:                   92  out of   5720     1%  
+    Number used as Logic:                91  out of   5720     1%  
     Number used as Memory:                1  out of   1440     0%  
        Number used as SRL:                1
 
 Slice Logic Distribution: 
- Number of LUT Flip Flop pairs used:    111
-   Number with an unused Flip Flop:      28  out of    111    25%  
-   Number with an unused LUT:            10  out of    111     9%  
-   Number of fully used LUT-FF pairs:    73  out of    111    65%  
-   Number of unique control sets:         9
+ Number of LUT Flip Flop pairs used:    102
+   Number with an unused Flip Flop:      19  out of    102    18%  
+   Number with an unused LUT:            10  out of    102     9%  
+   Number of fully used LUT-FF pairs:    73  out of    102    71%  
+   Number of unique control sets:         7
 
 IO Utilization: 
  Number of IOs:                          31
  Number of bonded IOBs:                  31  out of    102    30%  
 
 Specific Feature Utilization:
- Number of BUFG/BUFGCTRLs:                1  out of     16     6%  
+ Number of BUFG/BUFGCTRLs:                3  out of     16    18%  
+ Number of PLL_ADVs:                      1  out of      2    50%  
 
 ---------------------------
 Partition Resource Summary:
@@ -548,15 +550,13 @@ NOTE: THESE TIMING NUMBERS ARE ONLY A SYNTHESIS ESTIMATE.
 
 Clock Information:
 ------------------
------------------------------------+-------------------------------------+-------+
-Clock Signal                       | Clock buffer(FF name)               | Load  |
------------------------------------+-------------------------------------+-------+
-Osc_Clk_Buf                        | NONE(DivideByN_1/clk_out)           | 68    |
-Osc_Clk                            | IBUFG                               | 1     |
-DAC_clk                            | NONE(DeltaSigma_DAC1/DAC_output)    | 14    |
-LED_0_OBUF                         | NONE(DeltaSigma_DAC1/Sigma_Reg_9_LD)| 1     |
------------------------------------+-------------------------------------+-------+
-INFO:Xst:2169 - HDL ADVISOR - Some clock signals were not automatically buffered by XST with BUFG/BUFR resources. Please use the buffer_type constraint in order to insert these buffers to the clock signals to help prevent skew problems.
+-----------------------------------+------------------------+-------+
+Clock Signal                       | Clock buffer(FF name)  | Load  |
+-----------------------------------+------------------------+-------+
+dcm1_1/pll_base_inst/CLKOUT0       | BUFG                   | 68    |
+dcm1_1/pll_base_inst/CLKOUT1       | BUFG                   | 15    |
+Osc_Clk                            | IBUFG                  | 1     |
+-----------------------------------+------------------------+-------+
 
 Asynchronous Control Signals Information:
 ----------------------------------------
@@ -566,73 +566,115 @@ Timing Summary:
 ---------------
 Speed Grade: -2
 
-   Minimum period: 4.292ns (Maximum Frequency: 232.978MHz)
-   Minimum input arrival time before clock: 5.619ns
+   Minimum period: 3.276ns (Maximum Frequency: 305.250MHz)
+   Minimum input arrival time before clock: 3.634ns
    Maximum output required time after clock: 7.218ns
-   Maximum combinational path delay: 3.637ns
+   Maximum combinational path delay: No path found
 
 Timing Details:
 ---------------
 All values displayed in nanoseconds (ns)
 
 =========================================================================
-Timing constraint: Default period analysis for Clock 'Osc_Clk_Buf'
-  Clock period: 3.405ns (frequency: 293.686MHz)
-  Total number of paths / destination ports: 319 / 117
+Timing constraint: Default period analysis for Clock 'dcm1_1/pll_base_inst/CLKOUT0'
+  Clock period: 3.276ns (frequency: 305.250MHz)
+  Total number of paths / destination ports: 331 / 117
 -------------------------------------------------------------------------
-Delay:               3.405ns (Levels of Logic = 2)
-  Source:            ADC_Interface1/dp/counter_2 (FF)
-  Destination:       ADC_Interface1/ctrl/control_state_FSM_FFd2 (FF)
-  Source Clock:      Osc_Clk_Buf rising
-  Destination Clock: Osc_Clk_Buf rising
+Delay:               3.276ns (Levels of Logic = 1)
+  Source:            ADC_Interface1/ctrl/data_state_FSM_FFd1 (FF)
+  Destination:       ADC_Interface1/dp/ADC_data_out_11 (FF)
+  Source Clock:      dcm1_1/pll_base_inst/CLKOUT0 rising
+  Destination Clock: dcm1_1/pll_base_inst/CLKOUT0 rising
 
-  Data Path: ADC_Interface1/dp/counter_2 to ADC_Interface1/ctrl/control_state_FSM_FFd2
+  Data Path: ADC_Interface1/ctrl/data_state_FSM_FFd1 to ADC_Interface1/dp/ADC_data_out_11
                                 Gate     Net
     Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
     ----------------------------------------  ------------
-     FDRE:C->Q             7   0.525   1.186  ADC_Interface1/dp/counter_2 (ADC_Interface1/dp/counter_2)
-     LUT4:I0->O            1   0.254   1.112  ADC_Interface1/ctrl/control_state_FSM_FFd2-In_SW0 (N0)
-     LUT6:I1->O            1   0.254   0.000  ADC_Interface1/ctrl/control_state_FSM_FFd2-In (ADC_Interface1/ctrl/control_state_FSM_FFd2-In)
-     FD:D                      0.074          ADC_Interface1/ctrl/control_state_FSM_FFd2
+     FD:C->Q              14   0.525   1.126  ADC_Interface1/ctrl/data_state_FSM_FFd1 (ADC_Interface1/ctrl/data_state_FSM_FFd1)
+     INV:I->O             12   0.255   1.068  ADC_Interface1/ctrl/data_state_ld_adc1_cepot_INV_0 (ADC_Interface1/ctrl/data_state_ld_adc1_cepot)
+     FDE:CE                    0.302          ADC_Interface1/dp/ADC_data_out_0
     ----------------------------------------
-    Total                      3.405ns (1.107ns logic, 2.298ns route)
-                                       (32.5% logic, 67.5% route)
+    Total                      3.276ns (1.082ns logic, 2.194ns route)
+                                       (33.0% logic, 67.0% route)
 
 =========================================================================
-Timing constraint: Default period analysis for Clock 'DAC_clk'
-  Clock period: 4.292ns (frequency: 232.978MHz)
-  Total number of paths / destination ports: 249 / 14
+Timing constraint: Default period analysis for Clock 'dcm1_1/pll_base_inst/CLKOUT1'
+  Clock period: 2.511ns (frequency: 398.248MHz)
+  Total number of paths / destination ports: 198 / 15
 -------------------------------------------------------------------------
-Delay:               4.292ns (Levels of Logic = 6)
-  Source:            DeltaSigma_DAC1/Sigma_Reg_9_P_9 (FF)
-  Destination:       DeltaSigma_DAC1/Sigma_Reg_11 (FF)
-  Source Clock:      DAC_clk rising
-  Destination Clock: DAC_clk rising
+Delay:               2.511ns (Levels of Logic = 15)
+  Source:            DeltaSigma_DAC1/Sigma_Reg_0 (FF)
+  Destination:       DeltaSigma_DAC1/Sigma_Reg_13 (FF)
+  Source Clock:      dcm1_1/pll_base_inst/CLKOUT1 rising
+  Destination Clock: dcm1_1/pll_base_inst/CLKOUT1 rising
 
-  Data Path: DeltaSigma_DAC1/Sigma_Reg_9_P_9 to DeltaSigma_DAC1/Sigma_Reg_11
+  Data Path: DeltaSigma_DAC1/Sigma_Reg_0 to DeltaSigma_DAC1/Sigma_Reg_13
                                 Gate     Net
     Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
     ----------------------------------------  ------------
-     FD:C->Q               2   0.525   0.834  DeltaSigma_DAC1/Sigma_Reg_9_P_9 (DeltaSigma_DAC1/Sigma_Reg_9_P_9)
-     LUT3:I1->O            3   0.250   0.994  DeltaSigma_DAC1/Sigma_Reg_91 (DeltaSigma_DAC1/Sigma_Reg_9)
-     LUT3:I0->O            1   0.235   0.682  DeltaSigma_DAC1/Madd_Sigma_Adder8 (DeltaSigma_DAC1/Madd_Sigma_Adder8)
-     LUT4:I3->O            1   0.254   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_lut<0>9 (DeltaSigma_DAC1/Madd_Sigma_Adder_lut<0>9)
-     MUXCY:S->O            1   0.215   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_8 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>9)
-     MUXCY:CI->O           0   0.023   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_9 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>10)
-     XORCY:CI->O           1   0.206   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_xor<0>_10 (DeltaSigma_DAC1/Sigma_Adder<11>)
-     FDC:D                     0.074          DeltaSigma_DAC1/Sigma_Reg_11
+     FDR:C->Q              1   0.525   0.958  DeltaSigma_DAC1/Sigma_Reg_0 (DeltaSigma_DAC1/Sigma_Reg_0)
+     LUT4:I0->O            1   0.254   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_lut<0> (DeltaSigma_DAC1/Maccum_Sigma_Reg_lut<0>)
+     MUXCY:S->O            1   0.215   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<0> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<0>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<1> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<1>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<2> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<2>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<3> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<3>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<4> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<4>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<5> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<5>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<6> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<6>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<7> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<7>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<8> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<8>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<9> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<9>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<10> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<10>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<11> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<11>)
+     MUXCY:CI->O           0   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<12> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<12>)
+     XORCY:CI->O           1   0.206   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_xor<13> (Result<13>)
+     FDR:D                     0.074          DeltaSigma_DAC1/Sigma_Reg_13
     ----------------------------------------
-    Total                      4.292ns (1.782ns logic, 2.510ns route)
-                                       (41.5% logic, 58.5% route)
+    Total                      2.511ns (1.553ns logic, 0.958ns route)
+                                       (61.8% logic, 38.2% route)
 
 =========================================================================
-Timing constraint: Default OFFSET IN BEFORE for Clock 'Osc_Clk_Buf'
+Timing constraint: Default OFFSET IN BEFORE for Clock 'dcm1_1/pll_base_inst/CLKOUT1'
+  Total number of paths / destination ports: 102 / 14
+-------------------------------------------------------------------------
+Offset:              3.634ns (Levels of Logic = 16)
+  Source:            Switch<4> (PAD)
+  Destination:       DeltaSigma_DAC1/Sigma_Reg_13 (FF)
+  Destination Clock: dcm1_1/pll_base_inst/CLKOUT1 rising
+
+  Data Path: Switch<4> to DeltaSigma_DAC1/Sigma_Reg_13
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     IBUF:I->O            12   1.328   1.297  Switch_4_IBUF (Switch_4_IBUF)
+     LUT4:I1->O            1   0.235   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_lut<0> (DeltaSigma_DAC1/Maccum_Sigma_Reg_lut<0>)
+     MUXCY:S->O            1   0.215   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<0> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<0>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<1> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<1>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<2> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<2>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<3> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<3>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<4> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<4>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<5> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<5>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<6> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<6>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<7> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<7>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<8> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<8>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<9> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<9>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<10> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<10>)
+     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<11> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<11>)
+     MUXCY:CI->O           0   0.023   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<12> (DeltaSigma_DAC1/Maccum_Sigma_Reg_cy<12>)
+     XORCY:CI->O           1   0.206   0.000  DeltaSigma_DAC1/Maccum_Sigma_Reg_xor<13> (Result<13>)
+     FDR:D                     0.074          DeltaSigma_DAC1/Sigma_Reg_13
+    ----------------------------------------
+    Total                      3.634ns (2.337ns logic, 1.297ns route)
+                                       (64.3% logic, 35.7% route)
+
+=========================================================================
+Timing constraint: Default OFFSET IN BEFORE for Clock 'dcm1_1/pll_base_inst/CLKOUT0'
   Total number of paths / destination ports: 4 / 4
 -------------------------------------------------------------------------
 Offset:              2.338ns (Levels of Logic = 2)
   Source:            Switch<7> (PAD)
   Destination:       ADC_Interface1/dp/ctrl_2 (FF)
-  Destination Clock: Osc_Clk_Buf rising
+  Destination Clock: dcm1_1/pll_base_inst/CLKOUT0 rising
 
   Data Path: Switch<7> to ADC_Interface1/dp/ctrl_2
                                 Gate     Net
@@ -646,45 +688,13 @@ Offset:              2.338ns (Levels of Logic = 2)
                                        (70.8% logic, 29.2% route)
 
 =========================================================================
-Timing constraint: Default OFFSET IN BEFORE for Clock 'DAC_clk'
-  Total number of paths / destination ports: 236 / 26
--------------------------------------------------------------------------
-Offset:              5.619ns (Levels of Logic = 14)
-  Source:            Switch<4> (PAD)
-  Destination:       DeltaSigma_DAC1/Sigma_Reg_11 (FF)
-  Destination Clock: DAC_clk rising
-
-  Data Path: Switch<4> to DeltaSigma_DAC1/Sigma_Reg_11
-                                Gate     Net
-    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
-    ----------------------------------------  ------------
-     IBUF:I->O            14   1.328   1.355  Switch_4_IBUF (Switch_4_IBUF)
-     LUT3:I0->O            2   0.235   0.834  Mmux_DAC_data_in41 (DAC_data_in<1>)
-     LUT2:I0->O            1   0.250   0.682  DeltaSigma_DAC1/Madd_Sigma_Adder1 (DeltaSigma_DAC1/Madd_Sigma_Adder1)
-     LUT3:I2->O            1   0.254   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_lut<0>2 (DeltaSigma_DAC1/Madd_Sigma_Adder_lut<0>2)
-     MUXCY:S->O            1   0.215   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_1 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>2)
-     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_2 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>3)
-     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_3 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>4)
-     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_4 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>5)
-     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_5 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>6)
-     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_6 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>7)
-     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_7 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>8)
-     MUXCY:CI->O           1   0.023   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_8 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>9)
-     MUXCY:CI->O           0   0.023   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>_9 (DeltaSigma_DAC1/Madd_Sigma_Adder_cy<0>10)
-     XORCY:CI->O           1   0.206   0.000  DeltaSigma_DAC1/Madd_Sigma_Adder_xor<0>_10 (DeltaSigma_DAC1/Sigma_Adder<11>)
-     FDC:D                     0.074          DeltaSigma_DAC1/Sigma_Reg_11
-    ----------------------------------------
-    Total                      5.619ns (2.748ns logic, 2.871ns route)
-                                       (48.9% logic, 51.1% route)
-
-=========================================================================
-Timing constraint: Default OFFSET OUT AFTER for Clock 'Osc_Clk_Buf'
+Timing constraint: Default OFFSET OUT AFTER for Clock 'dcm1_1/pll_base_inst/CLKOUT0'
   Total number of paths / destination ports: 160 / 14
 -------------------------------------------------------------------------
 Offset:              7.218ns (Levels of Logic = 3)
   Source:            HEXon7segDisp1/Counter_9 (FF)
   Destination:       Seg7_SEG<6> (PAD)
-  Source Clock:      Osc_Clk_Buf rising
+  Source Clock:      dcm1_1/pll_base_inst/CLKOUT0 rising
 
   Data Path: HEXon7segDisp1/Counter_9 to Seg7_SEG<6>
                                 Gate     Net
@@ -699,94 +709,56 @@ Offset:              7.218ns (Levels of Logic = 3)
                                        (54.7% logic, 45.3% route)
 
 =========================================================================
-Timing constraint: Default OFFSET OUT AFTER for Clock 'DAC_clk'
+Timing constraint: Default OFFSET OUT AFTER for Clock 'dcm1_1/pll_base_inst/CLKOUT1'
   Total number of paths / destination ports: 1 / 1
 -------------------------------------------------------------------------
 Offset:              4.118ns (Levels of Logic = 1)
   Source:            DeltaSigma_DAC1/DAC_output (FF)
   Destination:       Audio (PAD)
-  Source Clock:      DAC_clk rising
+  Source Clock:      dcm1_1/pll_base_inst/CLKOUT1 rising
 
   Data Path: DeltaSigma_DAC1/DAC_output to Audio
                                 Gate     Net
     Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
     ----------------------------------------  ------------
-     FDC:C->Q              1   0.525   0.681  DeltaSigma_DAC1/DAC_output (DeltaSigma_DAC1/DAC_output)
+     FDR:C->Q              1   0.525   0.681  DeltaSigma_DAC1/DAC_output (DeltaSigma_DAC1/DAC_output)
      OBUF:I->O                 2.912          Audio_OBUF (Audio)
     ----------------------------------------
     Total                      4.118ns (3.437ns logic, 0.681ns route)
                                        (83.5% logic, 16.5% route)
 
 =========================================================================
-Timing constraint: Default OFFSET OUT AFTER for Clock 'Osc_Clk'
-  Total number of paths / destination ports: 1 / 1
--------------------------------------------------------------------------
-Offset:              1.746ns (Levels of Logic = 0)
-  Source:            SRL16E_inst (FF)
-  Destination:       dcm1_1:RESET (PAD)
-  Source Clock:      Osc_Clk rising
-
-  Data Path: SRL16E_inst to dcm1_1:RESET
-                                Gate     Net
-    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
-    ----------------------------------------  ------------
-     SRL16E:CLK->Q         0   1.746   0.000  SRL16E_inst (reset_DCM)
-    dcm1:RESET                 0.000          dcm1_1
-    ----------------------------------------
-    Total                      1.746ns (1.746ns logic, 0.000ns route)
-                                       (100.0% logic, 0.0% route)
-
-=========================================================================
-Timing constraint: Default path analysis
-  Total number of paths / destination ports: 2 / 2
--------------------------------------------------------------------------
-Delay:               3.637ns (Levels of Logic = 1)
-  Source:            dcm1_1:LOCKED (PAD)
-  Destination:       LED<0> (PAD)
-
-  Data Path: dcm1_1:LOCKED to LED<0>
-                                Gate     Net
-    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
-    ----------------------------------------  ------------
-    dcm1:LOCKED            2   0.000   0.725  dcm1_1 (LED_0_OBUF)
-     OBUF:I->O                 2.912          LED_0_OBUF (LED<0>)
-    ----------------------------------------
-    Total                      3.637ns (2.912ns logic, 0.725ns route)
-                                       (80.1% logic, 19.9% route)
-
-=========================================================================
 
 Cross Clock Domains Report:
 --------------------------
 
-Clock to Setup on destination clock DAC_clk
----------------+---------+---------+---------+---------+
-               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
-Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
----------------+---------+---------+---------+---------+
-DAC_clk        |    4.292|         |         |         |
-LED_0_OBUF     |    4.453|         |         |         |
-Osc_Clk_Buf    |    4.310|         |         |         |
----------------+---------+---------+---------+---------+
+Clock to Setup on destination clock dcm1_1/pll_base_inst/CLKOUT0
+----------------------------+---------+---------+---------+---------+
+                            | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock                |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+----------------------------+---------+---------+---------+---------+
+dcm1_1/pll_base_inst/CLKOUT0|    3.276|         |         |         |
+----------------------------+---------+---------+---------+---------+
 
-Clock to Setup on destination clock Osc_Clk_Buf
----------------+---------+---------+---------+---------+
-               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
-Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
----------------+---------+---------+---------+---------+
-Osc_Clk_Buf    |    3.405|         |         |         |
----------------+---------+---------+---------+---------+
+Clock to Setup on destination clock dcm1_1/pll_base_inst/CLKOUT1
+----------------------------+---------+---------+---------+---------+
+                            | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock                |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+----------------------------+---------+---------+---------+---------+
+dcm1_1/pll_base_inst/CLKOUT0|    2.383|         |         |         |
+dcm1_1/pll_base_inst/CLKOUT1|    2.511|         |         |         |
+----------------------------+---------+---------+---------+---------+
 
 =========================================================================
 
 
-Total REAL time to Xst completion: 7.00 secs
-Total CPU time to Xst completion: 5.09 secs
+Total REAL time to Xst completion: 9.00 secs
+Total CPU time to Xst completion: 7.02 secs
  
 --> 
 
 
-Total memory usage is 413108 kilobytes
+Total memory usage is 413324 kilobytes
 
 Number of errors   :    0 (   0 filtered)
 Number of warnings :    4 (   0 filtered)

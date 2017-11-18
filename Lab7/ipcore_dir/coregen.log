@@ -1,7 +1,27 @@
 INFO:sim:172 - Generating IP...
-Resolving generics for 'dcm1'...
-Applying external generics to 'dcm1'...
+Resolving generics for 'dcm2'...
+Applying external generics to 'dcm2'...
+WARNING:coreutil - Failed to generate file: core_v
+       invoked from within
+   "deliverEJava $componentName GenerationOptions $TopLevel"
+       (procedure "components::dcm2::generate" line 36)
+       invoked from within
+   "components::${componentName}::generate"
+       (procedure "::xilinx::sim::generation::generateCore3rdParty" line 125)
+       invoked from within
+   "::xilinx::sim::generation::generateCore3rdParty
+   $parameters(componentInstanceID)"
+       (procedure "main" line 25)
+       invoked from within
+   "main $argc $argv"
+       invoked from within
+   "return [main $argc $argv]"
+       (file
+   "/home/fred/Xilinx/14.7/ISE_DS/ISE/coregen/ip/xilinx/primary/com/xilinx/ip/cl
+   k_wiz_v3_6/generate/run_legacy_tcl_flow.tcl" line 47)ERROR:sim - Unable to evaluate Tcl file:
+   /home/fred/Xilinx/14.7/ISE_DS/ISE/coregen/ip/xilinx/primary/com/xilinx/ip/clk
+   _wiz_v3_6/generate/run_legacy_tcl_flow.tcl
 ERROR:sim - Failed executing Tcl generator.
-ERROR:sim - Failed to generate 'dcm1'.  Failed executing Tcl generator.
+ERROR:sim - Failed to generate 'dcm2'.  Failed executing Tcl generator.
 
-Wrote CGP file for project 'dcm1'.
+Wrote CGP file for project 'dcm2'.

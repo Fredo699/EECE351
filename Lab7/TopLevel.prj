@@ -1,3 +1,4 @@
+verilog work "ipcore_dir/dcm1.v"
 vhdl work "ADC_Datapath.vhd"
 vhdl work "ADC_Controller.vhd"
 vhdl work "HEXon7segDisp.vhd"

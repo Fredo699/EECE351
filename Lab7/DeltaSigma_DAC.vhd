@@ -15,7 +15,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity DeltaSigma_DAC is
-	Generic (MSB : integer := 9);
+	Generic (MSB : integer := 11);
    Port (clk : in  STD_LOGIC;
          DAC_reset : in  STD_LOGIC;
          DAC_input : in  STD_LOGIC_VECTOR (MSB downto 0);
@@ -23,29 +23,25 @@ entity DeltaSigma_DAC is
 end DeltaSigma_DAC;
 
 architecture Behavioral of DeltaSigma_DAC is
-	signal DeltaB      : unsigned(MSB downto 0);
-	signal Delta_Adder : unsigned(MSB downto 0);
-	signal Sigma_Adder : unsigned(MSB downto 0);
-	signal Sigma_Reg   : unsigned(MSB downto 0) := to_unsigned(512, MSB+1);
+	signal DeltaB      : unsigned(MSB+2 downto 0);
+	signal Delta_Adder : unsigned(MSB+2 downto 0);
+	signal Sigma_Adder : unsigned(MSB+2 downto 0);
+	signal Sigma_Reg   : unsigned(MSB+2 downto 0) := to_unsigned(0, MSB+3);
 
 begin
-	DeltaB <= (9 downto 8 => Sigma_Reg(9), others=>'0');
-	Delta_Adder <= DeltaB + unsigned(DAC_input);
-	Sigma_Adder <= Sigma_Reg + Delta_Adder;
+	DeltaB <= (MSB + 2 downto MSB+1 => Sigma_Reg(MSB+2), others=>'0');
+	Delta_Adder <= unsigned(DAC_input) + DeltaB;
+	Sigma_Adder <= Delta_Adder + Sigma_Reg;
 	
-	process(DAC_reset, clk) begin
-		if DAC_reset = '1' then
-			Sigma_Reg <= (others=>'0');
-		elsif rising_edge(clk) then
-			Sigma_Reg <= Sigma_Adder;
-		end if;
-	end process;
-	
-	process(clk, DAC_reset) begin
-		if DAC_reset = '1' then
-			DAC_output <= '0';
-		elsif rising_edge(clk) then
-			DAC_output <= Sigma_Reg(9);
+	process(clk) begin
+		if rising_edge(clk) then
+			if DAC_reset = '1' then
+				Sigma_Reg <= (others => '0');
+				DAC_output <= '0';
+			else
+				Sigma_Reg <= Sigma_Adder;
+				DAC_output <= Sigma_Reg(MSB+2);
+			end if;
 		end if;
 	end process;
 
