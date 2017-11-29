@@ -22,7 +22,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all;
 
 entity TopLevel is
-	Generic ( DELAY : integer := 640000 -- DELAY = 20 mS / clk_period
+	Generic ( DELAY : integer := 3 -- DELAY = 20 mS / clk_period
 				  );								-- for Simulation, DELAY = 3
     Port ( Clk : in STD_LOGIC;
 			  DIR_RIGHT : in STD_LOGIC; 	
@@ -116,42 +116,86 @@ architecture Behavioral of TopLevel is
 	signal MemWrite : std_logic;
 	
 	-- Signals needed to implement reset, run, stop, and single-step functions
-	signal reset, run, run_ARM, en_ARM, stop, step, step_sync, DM_WE : std_logic;
+	signal reset, run, run_ARM, en_ARM, stop, step, DM_WE : std_logic := '0';
 	signal DM_Addr : std_logic_vector(DM_addr_width-1 downto 0);
 	
 begin
-
-	-- Invert signals from momentary switches since those signals are active low
-	reset <= not DIR_LEFT;
-	run <= not DIR_UP;
-	stop <= not DIR_DOWN;
-	step <= not DIR_RIGHT;
 	
 	-- Reverse the order of the switches so that SWITCH(0) 
 	-- on the Papilio One FPGA board is on the right end
 --	SWITCHrev <= reverse(SWITCH);
 	
-	-- Debounce the "step" signal and synchronize it to the clock
-	-- and generate the "step_sync" signal for exactly one clock cycle
-	Inst_debounce: debounce 
+	-- Debounce inputs from momentary switches.
+	rst_db: debounce 
 	GENERIC MAP(DELAY => DELAY)
 	PORT MAP(
 		clk => Clk ,
-		sig_in => step,
-		sig_out => step_sync 
+		sig_in => DIR_LEFT,
+		sig_out => reset 
+	);
+	
+	run_db: debounce 
+	GENERIC MAP(DELAY => DELAY)
+	PORT MAP(
+		clk => Clk ,
+		sig_in => DIR_UP,
+		sig_out => run
+	);
+	
+	stop_db: debounce 
+	GENERIC MAP(DELAY => DELAY)
+	PORT MAP(
+		clk => Clk ,
+		sig_in => DIR_DOWN,
+		sig_out => stop
+	);
+	
+	step_db: debounce 
+	GENERIC MAP(DELAY => DELAY)
+	PORT MAP(
+		clk => Clk ,
+		sig_in => DIR_RIGHT,
+		sig_out => step 
 	);
 
 	-- The "run_ARM" signal is '1' when we want the ARM processor to be running
 	-- "reset" clears "run_ARM"
 	-- When "run" become a '1', run_ARM is set to '1' and is held at a '1' until
 	--    a "reset" signal or a "stop" signal is received
+	
+	process(clk, run, reset)
+		variable resrun : std_logic_vector(1 downto 0);
+	begin
+		resrun := reset & run;
+		if rising_edge(clk) then
+			if reset = '1' AND run = '0' then
+				run_ARM <= '0';
+			elsif reset = '0' AND run = '1' then
+				run_ARM <= '1';
+			elsif reset = '1' AND run = '1' then
+				run_arm <= '0';
+			else
+				null;
+			end if;
+	   end if;
+	end process;
 
 	
 	-- The en_ARM signal enables the ARM Processor to change its architecture state
 	-- This signal is synchronized to the system clock
 	-- When run_ARM is '1', en_ARM is '1'
-	-- If run_ARM is '0' and step_sync is '1' for one clock cycle, 
+	-- If run_ARM is '0' and step is '1' for one clock cycle, 
 	--    en_ARM will be '1' for one clock cycle
+	
+	process(clk, run_ARM, step) begin
+		if rising_edge(clk) then
+			if run_ARM='1' or step='1' then
+				en_ARM <= '1';
+			else
+				en_ARM <= '0';
+			end if;
+		end if;
+	end process;
 
 		
 	-- Instantiate Hex to 7-segment controller module
@@ -196,7 +240,16 @@ begin
 	-- on the left two characters of the 7-segment display
 	-- and the data memory address, A(7 downto 0) is SWITCH and the
 	-- data in addressed memory location appearing on ReadData(7 downto 0), 
-	-- is displayed on the right two characters of the 7-segment display 
+	-- is displayed on the right two characters of the 7-segment display
+	
+	process(run_ARM) begin
+		if run_ARM='0' then
+			HexDisp(15 downto 8) <= PC(7 downto 0);
+			HexDisp(7 downto 0) <= ReadData(7 downto 0);
+		else
+			HexDisp <= (others=>'0');
+		end if;
+	end process;
 
 	
 	-- Instr (27 downto 20) displayed on LEDs

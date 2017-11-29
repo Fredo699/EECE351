@@ -47,22 +47,22 @@ end Register_File;
 architecture Behavioral of Register_File is
 type regfile_t is array ((2**addr_size)-1 downto 0) of std_logic_vector(word_size-1 downto 0);
 
-signal A3_int : integer;
-signal A1_int : integer;
-signal A2_int : integer;
+signal A3_int : unsigned(addr_size-1 downto 0);
+signal A1_int : unsigned(addr_size-1 downto 0);
+signal A2_int : unsigned(addr_size-1 downto 0);
 
 signal regfile : regfile_t := (others=>(others=>'0'));
 
 begin
 
-	A3_int <= to_integer(unsigned(A3));
+	A3_int <= unsigned(A3);
 	
-	A1_int <= to_integer(unsigned(A1));
-	A2_int <= to_integer(unsigned(A2));
+	A1_int <= unsigned(A1);
+	A2_int <= unsigned(A2);
 	
 	process(clk, WE3, WD3) begin
 		if rising_edge(clk) and WE3 = '1' then
-			regfile(A3_int) <= WD3;
+			regfile(to_integer(A3_int)) <= WD3;
 		end if;
 	end process;
 	
@@ -70,7 +70,7 @@ begin
 		if A1_int = 15 then
 			RD1 <= R15;
 		else
-			RD1 <= regfile(A1_int);
+			RD1 <= regfile(to_integer(A1_int));
 		end if;
 	end process;
 	
@@ -78,11 +78,11 @@ begin
 		if A2_int = 2**addr_size - 1 then
 			RD2 <= R15;
 		else
-			RD2 <= regfile(A2_int);
+			RD2 <= regfile(to_integer(A2_int));
 		end if;
 	end process;
 	
-	WD3_Out <= regfile(A3_int);
+	WD3_Out <= regfile(to_integer(A3_int));
 	
 	
 end Behavioral;
