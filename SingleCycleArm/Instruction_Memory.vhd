@@ -62,7 +62,7 @@ begin
 
 	process (A)    -- Asynchronous Output                                            
 	begin                                                        
-		RD <= to_stdlogicvector(Instr_MEM(to_integer(shift_right(unsigned(A), 2))));      
+		RD <= to_stdlogicvector(Instr_MEM(to_integer(unsigned(A))));      
 	end process; 
 
 --	process (clk)   -- Synchronous Output                                             
