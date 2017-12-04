@@ -66,7 +66,7 @@ begin
 	
 	with MainDecOp select
 	Controls <= "0000001001" when "0000" | "0001",  -- DP Reg
-					"0001001001" when "0010" | "0011",  -- DP Imm
+					"0001011001" when "0010" | "0011",  -- DP Imm
 					"0011010100" when "0100" | "0110",  -- STR
 					"0101011000" when "0101" | "0111",  -- LDR
 					"1001100010" when others;				-- B
