@@ -187,7 +187,16 @@ begin
 	-- If run_ARM is '0' and step is '1' for one clock cycle, 
 	--    en_ARM will be '1' for one clock cycle
 	
-	en_ARM <= run_ARM or step;
+	process(clk, run_ARM, step) begin
+		if rising_edge(clk) then
+			if run_ARM='1' or step='1' then
+				en_ARM <= '1';
+			else
+				en_ARM <= '0';
+			end if;
+		end if;
+	end process;
+
 		
 	-- Instantiate Hex to 7-segment controller module
 	HEXon7segDisp1: HEXon7segDisp PORT MAP(

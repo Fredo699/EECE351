@@ -22,22 +22,39 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity datapath is  
-  port(clk, reset, en_ARM: in  STD_LOGIC;
-       RegSrc:            in  STD_LOGIC_VECTOR(1 downto 0);
-       RegWrite:          in  STD_LOGIC;
-       ImmSrc:            in  STD_LOGIC_VECTOR(1 downto 0);
-       ALUSrc:            in  STD_LOGIC;
-       ALUControl:        in  STD_LOGIC_VECTOR(1 downto 0);
-       MemtoReg:          in  STD_LOGIC;
-       PCSrc:             in  STD_LOGIC;
-       ALUFlags:          out STD_LOGIC_VECTOR(3 downto 0);
-       PC:                out STD_LOGIC_VECTOR(31 downto 0);
-       Instr:             in  STD_LOGIC_VECTOR(31 downto 0);
-       ALUResult, WriteData: out STD_LOGIC_VECTOR(31 downto 0);
-       ReadData:          in  STD_LOGIC_VECTOR(31 downto 0));
-end;
+  port(clk, reset, en_ARM: in STD_LOGIC;
+       PCWrite:				in STD_LOGIC;
+		 RegWrite: 				in STD_LOGIC;
+		 MemWrite:				in STD_LOGIC;
+		 IRWrite:				in STD_LOGIC;
+		 AdrSrc:					in STD_LOGIC;
+		 ResultSrc:				in STD_LOGIC_VECTOR(1 downto 0);
+		 ALUSrcA:				in STD_LOGIC;
+		 ALUSrcB:				in STD_LOGIC_VECTOR(1 downto 0);
+		 ImmSrc:					in STD_LOGIC_VECTOR(1 downto 0);
+		 RegSrc:					in STD_LOGIC_VECTOR(1 downto 0);
+		 ALUControl:			in STD_LOGIC_VECTOR(1 downto 0);
+		 
+		 Instr:					out STD_LOGIC_VECTOR(31 downto 0);
+		 ALUFlags:				out STD_LOGIC_VECTOR(3 downto 0);
+		 PC:						out STD_LOGIC_VECTOR(8 downto 0);
+		 ALUResult:				out STD_LOGIC_VECTOR(31 downto 0);
+		 WriteData:				out STD_LOGIC_VECTOR(31 downto 0);
+		 ReadData:				out STD_LOGIC_VECTOR(31 downto 0));
+end datapath;
 
 architecture Behavioral of Datapath is
+
+	COMPONENT Memory is
+	Generic ( data_width : positive := 32; 
+             addr_width : positive := 9);
+				 
+	Port (clk : in std_logic;
+			WE : in std_logic;
+			A : in std_logic_vector(addr_width - 1 downto 0);
+			WD : in std_logic_vector(data_width - 1 downto 0);
+			RD : out std_logic_vector(data_width - 1 downto 0));
+	end COMPONENT;
  
 	COMPONENT Register_File
 	GENERIC (word_size : natural := 32;
@@ -51,8 +68,7 @@ architecture Behavioral of Datapath is
 		WD3 : IN std_logic_vector(31 downto 0);
 		R15 : IN std_logic_vector(31 downto 0);          
 		RD1 : OUT std_logic_vector(31 downto 0);
-		RD2 : OUT std_logic_vector(31 downto 0)
-		);
+		RD2 : OUT std_logic_vector(31 downto 0));
 	END COMPONENT;
 
 	COMPONENT ALU
@@ -64,109 +80,120 @@ architecture Behavioral of Datapath is
 		ALUFlags : OUT std_logic_vector(3 downto 0)
 		);
 	END COMPONENT;
-
-	signal PCmux : std_logic_vector(31 downto 0);
-	signal PCsig : std_logic_vector(31 downto 0) := (others => '0');
-	signal PCplus4 : unsigned(31 downto 0);
-	signal PCplus8 : std_logic_vector(31 downto 0);
-	signal ExtImm : std_logic_vector(31 downto 0);
-	signal ShiftedImm24 : signed(31 downto 0);
+	
+	--PC
+	signal PC_int: std_logic_vector(7 downto 0);
+	
+	--Instr/Data Memory
+	signal Adr : std_logic_vector(7 downto 0);
+	signal RDsig : std_logic_vector(31 downto 0);
+	signal Instr_int : std_logic_vector(31 downto 0);
+	signal Data : std_logic_vector(31 downto 0);
+	
+	--Register File
 	signal RA1mux : std_logic_vector(3 downto 0);
 	signal RA2mux : std_logic_vector(3 downto 0);
+	signal RD1sig : std_logic_vector(31 downto 0);
+	signal RD2sig : std_logic_vector(31 downto 0);
+	signal A : std_logic_vector(31 downto 0);
+	signal WriteDataSig : std_logic_vector(31 downto 0);
+	
+	--ALU
 	signal SrcA : std_logic_vector(31 downto 0);
 	signal SrcB : std_logic_vector(31 downto 0);
-	signal ALUResultSig : std_logic_vector(31 downto 0);
-	signal WriteDataSig : std_logic_vector(31 downto 0);
-	signal Result : std_logic_vector(31 downto 0);	
+	signal ALUResult_int : std_logic_vector(31 downto 0);
+	signal ALUOut : std_logic_vector(31 downto 0);
+	signal Result : std_logic_vector(31 downto 0);
 	
-	signal RF_WE3 : std_logic;
-
+	--Zero extended immediate
+	signal ExtImm : std_logic_vector(31 downto 0);
+	
 begin
-
-	-- Output the Program Counter
-	PC <= PCsig;
-	-- Output the ALUResult for the Data Memory Address
-	ALUResult <= ALUResultSig;
-	-- Output the data to be written to Data Memory
+	--send internal signals out
+	PC <= PC_int;
+	Instr <= Instr_int;
 	WriteData <= WriteDataSig;
+	ReadData <= Rd1Sig;
+	ALUResult <= ALUResult_int;
 	
-	-- This Mux provides the data loaded into the PC
-	-- When PCSrc = '1', the source of the PC in output of ALU or Data Memory
-	--     Used for branching
-	-- When PCSrc = '0', the source of the PC is PCPlus4
-	--     Used when accessing the next consecutive instruction
-	PCmux <= Result when PCSrc = '1' else std_logic_vector(PCplus4);
+	--instr/data mem muxes
+	Adr <= PC_int when AdrSrc='0' else Result(7 downto 0);
 	
-	-- Program Counter
-	-- reset clears it to 0
-	-- en_ARM allows PC to loaded with PCmux
-	Process(clk) 
-	begin 
+	--Register file muxes
+	RA1mux <= Instr_int(19 downto 16) when RegSrc(0)='0' else x"F";
+	RA2mux <= Instr_int(3 downto 0) when RegSrc(1)='0' else Instr_int(15 downto 12);
+	
+	--ALU Muxes
+	SrcA <= A when ALUSrcA = '0' else x"000000" & PC_int;
+	
+	with ALUSrcB select
+		SrcB <= WriteDataSig when "00",
+				  ExtImm when "01",
+				  x"00000004" when others;
+	
+	--zero-extended immediate mux
+	with ImmSrc select
+		ExtImm <= x"00" & Instr_int(23 downto 0) when "10",
+					 x"000000" & Instr_int(7 downto 0) when "00",
+					 x"00000" & Instr_int(11 downto 0) when others;
+	
+	--Result mux
+	with ResultSrc select
+		Result <= ALUOut when "00",
+					 Data when "01",
+					 ALUResult_int when others;
+	
+	process(clk, Result) begin --PC control
 		if rising_edge(clk) then
-			if reset = '1' then
-				PCsig <= (others => '0');
-			elsif en_ARM = '1' then	
-				PCsig <= PCmux;
-			else
-				PCsig <= PCsig;
+			if PCWrite = '1' then
+				PC_int <= Result(7 downto 0);
 			end if;
-		end if; 
+		end if;
 	end process;
 	
-	-- Adder adds 4 to the PC
-	PCplus4 <= unsigned(PCsig) + 4;
+	process(clk, RDsig, IRWrite) begin --Fetch instr
+		if rising_edge(clk) then
+			if IRWrite = '1' then
+				Instr_int <= RDsig;
+			end if;
+		end if;
+	end process;
 	
-	-- Adder adds 4 to PCplus4 to produce PC + 8
-	PCplus8 <= std_logic_vector(PCplus4 + 4);
+	process(clk, RD1sig, RD2sig) begin --clock A and writedatasig
+		if rising_edge(clk) then
+			A <= RD1sig;
+			WriteDataSig <= RD2sig;
+		end if;
+	end process;
 	
-	-- Mux selects address for Port 1 of the Register File
-	RA1mux <= Instr(19 downto 16) when RegSrc(0) = '0' else x"F";
+	process(clk, ALUResult_int) begin --clock ALUOut
+		if rising_edge(clk) then
+			ALUOut <= ALUResult_int;
+		end if;
+	end process;
 	
-	-- Mux selects address for Port 2 of the Register File
-	RA2mux <= Instr(3 downto 0) when RegSrc(1) = '0' else Instr(15 downto 12);
+	process(clk, RDsig) begin --clock Data
+		if rising_edge(clk) then
+			Data <= RDsig;
+		end if;
+	end process;
 	
-	-- Write enable for Register File is gated by en_ARM
-	RF_WE3 <= RegWrite and en_ARM;
+	mem: Memory PORT MAP(
+		clk=>clk,
+		A=>Adr,
+		WE=>MemWrite, WD=>WriteDataSig,
+		RD=>RDsig);
 	
-	-- Instantiate Register File (16 registers x 32 bits)
-	Inst_Register_File: Register_File PORT MAP(
-		clk => clk,
-		WE3 => RF_WE3,
-		A1 => RA1mux,
-		A2 => RA2mux,
-		A3 => Instr(15 downto 12),
-		WD3 => Result,
-		R15 => PCplus8,
-		RD1 => SrcA,
-		RD2 => WriteDataSig 
-	);
+	regfile: Register_File PORT MAP(
+		clk=>clk,
+		WE3=>RegWrite,
+		A1=>RA1mux, A2=>RA2mux, A3=>Instr_int(15 downto 12),
+		WD3=>Result, R15=>Result,
+		RD1=>RD1sig, RD2=>RD2sig);
 	
-	-- 24-bit Immediate Field sign extended and shifted left twice
-	ShiftedImm24 <= resize(signed(Instr(23 downto 0)),30) & "00";
-	
-	-- Extend function for Immediate data
-	with ImmSrc select
-	ExtImm <= std_logic_vector(resize(unsigned(Instr(7 downto 0)),ExtImm'length)) when "00",
-				 std_logic_vector(resize(unsigned(Instr(11 downto 0)),ExtImm'length)) when "01",
-				 std_logic_vector(ShiftedImm24) when others;
-	
-	-- Selects Source of ALU input B
-	-- When ALUSrc = '1', selects Extended Immediate Data
-	-- When ALUSrc = '0', selects data from register file on Port 2
-	SrcB <= WriteDataSig when ALUSrc = '0' else ExtImm;
-	
-	-- Instantiate the ALU
-	Inst_ALU: ALU PORT MAP(
-		A => SrcA,
-		B => SrcB,
-		ALUControl => ALUControl,
-		Result => ALUResultSig,
-		ALUFlags => ALUFlags
-	);	
-	
-	-- MUX "ReadData" from Data Memory and "ALUResult" from the ALU to produce "Result"
-	-- Result is data written to the PC or the Register File
-	Result <= ALUResultSig when MemtoReg = '0' else ReadData;
-	
+	i_alu : ALU PORT MAP(
+		A=>SrcA, B=>SrcB,
+		ALUControl=>ALUControl,
+		Result=>ALUResult_int, ALUFlags=>ALUFlags);
 end Behavioral;
 

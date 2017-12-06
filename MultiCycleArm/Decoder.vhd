@@ -22,21 +22,32 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use IEEE.NUMERIC_STD.ALL;
 
 entity Decoder is
-    Port ( Op : in  STD_LOGIC_VECTOR (1 downto 0);
+    Port ( clk : in STD_LOGIC;
+			  reset : in STD_LOGIC;
+			  Op : in  STD_LOGIC_VECTOR (1 downto 0);
            Funct : in  STD_LOGIC_VECTOR (5 downto 0);
            Rd : in  STD_LOGIC_VECTOR (3 downto 0);
-           FlagW : out  STD_LOGIC_VECTOR (1 downto 0);
-           PCS : out  STD_LOGIC;
-           RegW : out  STD_LOGIC;
-           MemW : out  STD_LOGIC;
-           MemtoReg : out  STD_LOGIC;
-           ALUSrc : out  STD_LOGIC;
-           ImmSrc : out  STD_LOGIC_VECTOR (1 downto 0);
-           RegSrc : out  STD_LOGIC_VECTOR (1 downto 0);
-           ALUControl : out  STD_LOGIC_VECTOR (1 downto 0));
+			  FlagW : out STD_LOGIC_VECTOR(1 downto 0);
+			  PCS : out STD_LOGIC;
+			  NextPC : out STD_LOGIC;
+			  RegW : out STD_LOGIC;
+			  MemW : out STD_LOGIC;
+			  IRWrite : out STD_LOGIC;
+			  AdrSrc : out STD_LOGIC;
+			  ResultSrc : out STD_LOGIC_VECTOR(1 downto 0);
+			  ALUSrcA : out STD_LOGIC;
+			  ALUSrcB : out STD_LOGIC_VECTOR(1 downto 0);
+			  ImmSrc : out STD_LOGIC_VECTOR(1 downto 0);
+			  RegSrc : out STD_LOGIC_VECTOR(1 downto 0);
+			  ALUControl : out STD_LOGIC_VECTOR(1 downto 0));
 end Decoder;
 
 architecture Behavioral of Decoder is
+
+	type state_type is (Fetch, Decode, 
+							  MemAdr, ExecuteR, ExecuteI, Branch_state,
+							  MemRead, MemWrite, ALUWB,
+							  MemWB);
 
 	alias cmd : std_logic_vector(3 downto 0) 
 									is Funct(4 downto 1); -- Instruction Command
@@ -53,7 +64,10 @@ architecture Behavioral of Decoder is
 
 	signal RegWsig : std_logic;
 	signal Branch : std_logic;
-	signal ALUOp : std_logic;	
+	signal ALUOp : std_logic;
+	
+	signal state : state_type := Fetch;
+	signal next_state : state_type := Fetch;
 
 begin
 
@@ -61,25 +75,20 @@ begin
 	-- PCS = 1 if PC is written by an instruction or branch (B)
 	PCS <= '1' when (Rd = x"F" and RegWsig = '1') or Branch = '1' else '0';
 	
-	-- MAIN DECODER
-	MainDecOp <= Op & Funct(5) & Funct(0);
+	-- Instr Decoder
+	MainDecOp <= Op & S & I;
 	
+	--RegSrc control
 	with MainDecOp select
-	Controls <= "0000001001" when "0000" | "0001",  -- DP Reg
-					"0001011001" when "0010" | "0011",  -- DP Imm
-					"0011010100" when "0100" | "0110",  -- STR
-					"0101011000" when "0101" | "0111",  -- LDR
-					"1001100010" when others;				-- B
+		RegSrc <= "10" when "0101" | "0111" | "0100" | "0110" | "0010" | "0011", -- LDR, STR, DP Immediate
+					 "00" when "0000" | "0001", -- DP Register
+					 "11" when "1000" | "1001" | "1010" | "1011"; -- B
 	
-	Branch <= Controls(9);				-- Branch Instruction
-	MemtoReg <= Controls(8);			-- LDR, Data Mem to RF
-	MemW <= Controls(7);					-- STR, Data Mem WE
-	ALUSrc <= Controls(6);				-- ExtImm to ALU SrcB
-	ImmSrc <= Controls(5 downto 4);  -- Extend control
-	RegWsig <= Controls(3);				-- To Condition Logic
-	RegSrc <= Controls(2 downto 1);  -- RegSrc(0): RA1 Source
-												-- RegSrc(1): RA2 Source
-	ALUOp <= Controls(0);				-- DP Instruction
+	-- ImmSrc control
+	with MainDecOp select
+		ImmSrc <= "01" when "0101" | "0111" | "0100" | "0110", -- LDR, STR
+					 "00" when "0010" | "0011" | "0000" | "0001", -- DP immediate, DP Register
+					 "10" when "1000" | "1001" | "1010" | "1011"; -- B
 	
 	RegW <= RegWsig; -- RegW output
 
@@ -108,6 +117,103 @@ begin
 				 "00" when "111000",  -- ORR
 				 "10" when "111001",  -- ORR
 				 "00" when others;    -- Not DP
+	
+	process(state) begin -- state machine
+	RegWsig	 <= '0';
+	MemW		 <= '0';
+	IRWrite	 <= '0';
+	AdrSrc 	 <= '0';
+	AluSrcA 	 <= '1';
+	AluSrcB 	 <= "10";
+	ALUOp 	 <= '0';
+	ResultSrc <= "10";
+	NextPC 	 <= '0';
+	Branch	 <= '0';
+	
+	case state is
+		when Fetch=>
+			next_state <= Decode;
+			IRWrite <= '1';
+			NextPC <= '1';
+		
+		when Decode=>
+			AluSrcA <= '1';
+			AluSrcB <= "10";
+			ALUOp <= '0';
+			ResultSrc <= "10";
+			if Op = "01" then
+				next_state <= MemAdr;
+			elsif Op = "00" and I = '0' then
+				next_state <= ExecuteR;
+			elsif Op = "00" and I = '1' then
+				next_state <= ExecuteI;
+			else
+				next_state <= Branch_state;
+			end if;
+		
+		when MemAdr=>
+			AluSrcA <= '0';
+			AluSrcB <= "01";
+			ALUOp <= '0';
+			
+			if S = '1' then
+				next_state <= MemRead;
+			else
+				next_state <= MemWrite;
+			end if;
+		
+		when ExecuteR=>
+			AluSrcA <= '0';
+			AluSrcB <= "00";
+			ALUOp <= '1';
+			next_state <= ALUWB;
+		
+		when ExecuteI=>
+			AluSrcA <= '0';
+			AluSrcB <= "01";
+			ALUOp <= '1';
+			next_state <= ALUWB;
+		
+		when Branch_state=>
+			AluSrcA <= '0';
+			AluSrcB <= "01";
+			ALUOp <= '0';
+			ResultSrc <= "10";
+			Branch <= '0';
+			next_state <= Fetch;
+		
+		when MemRead=>
+			ResultSrc <= "00";
+			AdrSrc <= '1';
+			next_state <= MemWB;
+		
+		when MemWrite=>
+			ResultSrc <= "00";
+			AdrSrc <= '1';
+			MemW <= '1';
+			next_state <= Fetch;
+		
+		when ALUWB=>
+			ResultSrc <= "00";
+			RegWsig <= '1';
+			next_state <= Fetch;
+		
+		when MemWB=>
+			ResultSrc <= "01";
+			RegWsig <= '1';
+			next_state <= Fetch;
+	end case;
+	end process;
+	
+	process(clk, next_state) begin -- FSM transition
+		if rising_edge(clk) then
+			if reset = '1' then
+				state <= Fetch;
+			else
+				state <= next_state;
+			end if;
+		end if;
+	end process;
 
 end Behavioral;
 

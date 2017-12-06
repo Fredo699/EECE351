@@ -30,7 +30,8 @@ entity Cond_Logic is
            PCS : in  STD_LOGIC;
            RegW : in  STD_LOGIC;
            MemW : in  STD_LOGIC;
-           PCSrc : out  STD_LOGIC;
+			  NextPC : in STD_LOGIC;
+           PCWrite : out  STD_LOGIC;
            RegWrite : out  STD_LOGIC;
            MemWrite : out  STD_LOGIC);
 end Cond_Logic;
@@ -39,7 +40,7 @@ architecture Behavioral of Cond_Logic is
 
 --	signal FlagWrite : std_logic_vector(1 downto 0);
 	signal Flags : std_logic_vector(3 downto 0);
-	signal CondEx : std_logic;
+	signal CondEx, Next_CondEx : std_logic;
 	signal N, Z, C, V : STD_LOGIC;
 
 begin
@@ -54,7 +55,7 @@ begin
 		if rising_edge(clk) then
 			if reset = '1' then
 				Flags(3 downto 2) <= (others => '0');
-			elsif FlagW(1) = '1' and CondEx = '1' then
+			elsif FlagW(1) = '1' and Next_CondEx = '1' then
 				Flags(3 downto 2) <= ALUFlags(3 downto 2);
 			end if;	
 		end if;
@@ -65,9 +66,15 @@ begin
 		if rising_edge(clk) then
 			if reset = '1' then
 				Flags(1 downto 0) <= (others => '0');
-			elsif FlagW(0) = '1' and CondEx = '1' then
+			elsif FlagW(0) = '1' and Next_CondEx = '1' then
 				Flags(1 downto 0) <= ALUFlags(1 downto 0);
 			end if;	
+		end if;
+	end process;
+	
+	process(clk) begin -- CondEx reg control
+		if rising_edge(clk) then
+			CondEx <= Next_CondEx;
 		end if;
 	end process;
 	
@@ -75,28 +82,28 @@ begin
    N <= Flags(3);  Z <= Flags(2);  C <= Flags(1);  V <= Flags(0);  
 	process(Cond, N, Z, C, V) 
 	begin
-		case Cond is
-			when "0000" => CondEx <= Z;							-- EQ
-			when "0001" => CondEx <= not Z;						-- NE
-			when "0010" => CondEx <= C;							-- CS/HS
-			when "0011" => CondEx <= not C;						-- CC/LO
-			when "0100" => CondEx <= N;							-- MI
-			when "0101" => CondEx <= not N;						-- PL
-			when "0110" => CondEx <= V;							-- VS
-			when "0111" => CondEx <= not V;						-- VC
-			when "1000" => CondEx <= not Z and C;				-- HI
-			when "1001" => CondEx <= Z or not C;				-- LS
-			when "1010" => CondEx <= not (N xor V);			-- GE
-			when "1011" => CondEx <= N xor V;					-- LT
-			when "1100" => CondEx <= not Z and not(N xor V);--	GT
-			when "1101" => CondEx <= Z or (N xor V);			-- LE
-			when "1110" => CondEx <= '1';							-- AL (or none)
-			when others => CondEx <= '0';	
-		end case;
+			case Cond is
+				when "0000" => Next_CondEx <= Z;							-- EQ
+				when "0001" => Next_CondEx <= not Z;						-- NE
+				when "0010" => Next_CondEx <= C;							-- CS/HS
+				when "0011" => Next_CondEx <= not C;						-- CC/LO
+				when "0100" => Next_CondEx <= N;							-- MI
+				when "0101" => Next_CondEx <= not N;						-- PL
+				when "0110" => Next_CondEx <= V;							-- VS
+				when "0111" => Next_CondEx <= not V;						-- VC
+				when "1000" => Next_CondEx <= not Z and C;				-- HI
+				when "1001" => Next_CondEx <= Z or not C;				-- LS
+				when "1010" => Next_CondEx <= not (N xor V);			-- GE
+				when "1011" => Next_CondEx <= N xor V;					-- LT
+				when "1100" => Next_CondEx <= not Z and not(N xor V);--	GT
+				when "1101" => Next_CondEx <= Z or (N xor V);			-- LE
+				when "1110" => Next_CondEx <= '1';							-- AL (or none)
+				when others => Next_CondEx <= '0';	
+			end case;
 	end process;
 
 	
-	PCSrc    <= PCS  and CondEx;
+	PCWrite  <= (PCS  and CondEx) or NextPC;
 	RegWrite <= RegW and CondEx;
 	MemWrite <= MemW and CondEx;
 	

@@ -20,91 +20,110 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
-entity controller is -- single cycle control decoder
+entity controller is -- multicycle control decoder
   port(clk, reset:        in  STD_LOGIC;
-       Instr:             in  STD_LOGIC_VECTOR(31 downto 12);
-       ALUFlags:          in  STD_LOGIC_VECTOR(3 downto 0);
-       RegSrc:            out STD_LOGIC_VECTOR(1 downto 0);
-       RegWrite:          out STD_LOGIC;
-       ImmSrc:            out STD_LOGIC_VECTOR(1 downto 0);
-       ALUSrc:            out STD_LOGIC;
-       ALUControl:        out STD_LOGIC_VECTOR(1 downto 0);
-       MemWrite:          out STD_LOGIC;
-       MemtoReg:          out STD_LOGIC;
-       PCSrc:             out STD_LOGIC);
-end;
+		 
+		 --CondLogic Input:
+       Cond:				  in STD_LOGIC_VECTOR(3 downto 0);
+		 ALUFlags:			  in STD_LOGIC_VECTOR(3 downto 0);
+		 
+		 --Decoder Input:
+		 Op:					  in STD_LOGIC_VECTOR(1 downto 0);
+		 Funct:				  in STD_LOGIC_VECTOR(5 downto 0);
+		 Rd:					  in STD_LOGIC_VECTOR(3 downto 0);
+		 
+		 --Cond Logic output:
+		 PCWrite:			  out STD_LOGIC;
+		 RegWrite:			  out STD_LOGIC;
+		 MemWrite:			  out STD_LOGIC;
+		 
+		 --Decoder Output:
+		 IRWrite:			  out STD_LOGIC;
+		 AdrSrc:				  out STD_LOGIC;
+		 ResultSrc:			  out STD_LOGIC_VECTOR(1 downto 0);
+		 ALUSrcA:			  out STD_LOGIC;
+		 ALUSrcB:			  out STD_LOGIC_VECTOR(1 downto 0);
+		 ImmSrc:				  out STD_LOGIC_VECTOR(1 downto 0);
+		 RegSrc:				  out STD_LOGIC_VECTOR(1 downto 0);
+		 ALUControl:		  out STD_LOGIC_VECTOR(1 downto 0));
+end controller;
+
 architecture Behavioral of Controller is
 
-	COMPONENT Decoder
-	PORT(
-		Op : IN std_logic_vector(1 downto 0);
-		Funct : IN std_logic_vector(5 downto 0);
-		Rd : IN std_logic_vector(3 downto 0);
-		FlagW : OUT std_logic_vector(1 downto 0);
-		PCS : OUT std_logic;
-		RegW : OUT std_logic;
-		MemW : OUT std_logic;
-		MemtoReg : OUT std_logic;
-		ALUSrc : OUT std_logic;
-		ImmSrc : OUT std_logic_vector(1 downto 0);
-		RegSrc : OUT std_logic_vector(1 downto 0);
-		ALUControl : OUT std_logic_vector(1 downto 0)          
-		);
-	END COMPONENT;
+component Decoder is
+    Port ( clk : in STD_LOGIC;
+			  reset: in STD_LOGIC;
+			  Op : in  STD_LOGIC_VECTOR (1 downto 0);
+           Funct : in  STD_LOGIC_VECTOR (5 downto 0);
+           Rd : in  STD_LOGIC_VECTOR (3 downto 0);
+			  FlagW : out STD_LOGIC_VECTOR(1 downto 0);
+			  PCS : out STD_LOGIC;
+			  NextPC : out STD_LOGIC;
+			  RegW : out STD_LOGIC;
+			  MemW : out STD_LOGIC;
+			  IRWrite : out STD_LOGIC;
+			  AdrSrc : out STD_LOGIC;
+			  ResultSrc : out STD_LOGIC_VECTOR(1 downto 0);
+			  ALUSrcA : out STD_LOGIC;
+			  ALUSrcB : out STD_LOGIC_VECTOR(1 downto 0);
+			  ImmSrc : out STD_LOGIC_VECTOR(1 downto 0);
+			  RegSrc : out STD_LOGIC_VECTOR(1 downto 0);
+			  ALUControl : out STD_LOGIC_VECTOR(1 downto 0));
+end component;
 
-	COMPONENT Cond_Logic
-	PORT(
-		clk : std_logic;
-		reset : std_logic;
-		Cond : IN std_logic_vector(3 downto 0);
-		ALUFlags : IN std_logic_vector(3 downto 0);
-		FlagW : IN std_logic_vector(1 downto 0);
-		PCS : IN std_logic;
-		RegW : IN std_logic;
-		MemW : IN std_logic;          
-		PCSrc : OUT std_logic;
-		RegWrite : OUT std_logic;
-		MemWrite : OUT std_logic
-		);
-	END COMPONENT;
+
+component Cond_Logic is
+    Port ( clk : in  STD_LOGIC;
+			  reset : in  STD_LOGIC;
+           Cond : in  STD_LOGIC_VECTOR (3 downto 0);
+           ALUFlags : in  STD_LOGIC_VECTOR (3 downto 0);
+           FlagW : in  STD_LOGIC_VECTOR (1 downto 0);
+           PCS : in  STD_LOGIC;
+           RegW : in  STD_LOGIC;
+           MemW : in  STD_LOGIC;
+			  NextPC : in STD_LOGIC;
+           PCWrite : out  STD_LOGIC;
+           RegWrite : out  STD_LOGIC;
+           MemWrite : out  STD_LOGIC);
+end component;
 	
+	--Decoder=>CondLogic signals
 	signal FlagW : std_logic_vector(1 downto 0);
 	signal PCS  : std_logic;
+	signal NextPC : std_logic;
 	signal RegW : std_logic;
 	signal MemW : std_logic;
+	
 
 begin
-
 	-- Instantiate the Decoder Function of the Controller
 	Inst_Decoder: Decoder PORT MAP(
-		Op => Instr(27 downto 26),
-		Funct => Instr(25 downto 20),
-		Rd => Instr(15 downto 12),
-		FlagW => FlagW,
-		PCS => PCS,
-		RegW => RegW,
-		MemW => MemW,
-		MemtoReg => MemtoReg,
-		ALUSrc => ALUSrc,
-		ImmSrc => ImmSrc,
-		RegSrc => RegSrc,
-		ALUControl => ALUControl 
+		clk=>clk, reset=>reset,
+		
+		--input
+		Op=>Op, Funct=>Funct, Rd=>Rd,
+		
+		--output (sigs)
+		FlagW=>FlagW, PCS=>PCS, NextPC=>NextPC, RegW=>RegW, MemW=>MemW,
+		
+		--output (nodes)
+		IRWrite=>IRWrite, AdrSrc=>AdrSrc, ResultSrc=>ResultSrc,
+		ALUSrcA=>ALUSrcA, ALUSrcB=>ALUSrcB, ImmSrc=>ImmSrc,
+		RegSrc=>RegSrc, ALUControl=>ALUControl
 	);
 
 	-- Instantiate the Conditional Logic Function of the Controller
 	Inst_Cond_Logic: Cond_Logic PORT MAP(
-		clk => clk,
-		reset => reset,
-		Cond => Instr(31 downto 28),
-		ALUFlags => ALUFlags,
-		FlagW => FlagW,
-		PCS => PCS,
-		RegW => RegW,
-		MemW => MemW,
-		PCSrc => PCSrc,
-		RegWrite => RegWrite,
-		MemWrite => MemWrite 
+		clk => clk, reset => reset,
+		
+		--input (nodes)
+		Cond=>Cond, ALUFlags=>ALUFlags,
+		
+		--input (sigs)
+		FlagW=>FlagW, PCS=>PCS, NextPC=>NextPC, RegW=>RegW, MemW=>MemW,
+		
+		--output
+		PCWrite=>PCWrite, RegWrite=>RegWrite, MemWrite=>MemWrite
 	);
-
 end Behavioral;
 

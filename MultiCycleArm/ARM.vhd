@@ -21,99 +21,126 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity ARM is -- single cycle processor
-  port(clk, reset, en_ARM: in  STD_LOGIC;
-       PC:                out STD_LOGIC_VECTOR(31 downto 0);
-       Instr:             in  STD_LOGIC_VECTOR(31 downto 0);
-       MemWrite:          out STD_LOGIC;
-       ALUResult, WriteData: out STD_LOGIC_VECTOR(31 downto 0);
-       ReadData:          in  STD_LOGIC_VECTOR(31 downto 0));
+  Generic (addr_size : natural := 9);
+  
+  port(clk, reset, en_ARM: in STD_LOGIC;
+		 SWITCH :				in STD_LOGIC_VECTOR(7 downto 0);
+       PCOut: 					out STD_LOGIC_VECTOR(7 downto 0);
+		 InstrOut:				out STD_LOGIC_VECTOR(27 DOWNTO 20);
+		 ReadDataOut:			out STD_LOGIC_VECTOR(7 DOWNTO 0));
 end ARM;
 
 architecture Behavioral of ARM is
 
-	COMPONENT controller
-	PORT(
-		clk : IN std_logic;
-		reset : IN std_logic;
-		Instr : IN std_logic_vector(31 downto 12);
-		ALUFlags : IN std_logic_vector(3 downto 0);          
-		RegSrc : OUT std_logic_vector(1 downto 0);
-		RegWrite : OUT std_logic;
-		ImmSrc : OUT std_logic_vector(1 downto 0);
-		ALUSrc : OUT std_logic;
-		ALUControl : OUT std_logic_vector(1 downto 0);
-		MemWrite : OUT std_logic;
-		MemtoReg : OUT std_logic;
-		PCSrc : OUT std_logic
-		);
-	END COMPONENT;
+component controller is -- multicycle control decoder
+  port(clk, reset:        in  STD_LOGIC;
+		 
+		 --CondLogic Input:
+       Cond:				  in STD_LOGIC_VECTOR(3 downto 0);
+		 ALUFlags:			  in STD_LOGIC_VECTOR(3 downto 0);
+		 
+		 --Decoder Input:
+		 Op:					  in STD_LOGIC_VECTOR(1 downto 0);
+		 Funct:				  in STD_LOGIC_VECTOR(5 downto 0);
+		 Rd:					  in STD_LOGIC_VECTOR(3 downto 0);
+		 
+		 --Cond Logic output:
+		 PCWrite:			  out STD_LOGIC;
+		 RegWrite:			  out STD_LOGIC;
+		 MemWrite:			  out STD_LOGIC;
+		 
+		 --Decoder Output:
+		 IRWrite:			  out STD_LOGIC;
+		 AdrSrc:				  out STD_LOGIC;
+		 ResultSrc:			  out STD_LOGIC_VECTOR(1 downto 0);
+		 ALUSrcA:			  out STD_LOGIC;
+		 ALUSrcB:			  out STD_LOGIC_VECTOR(1 downto 0);
+		 ImmSrc:				  out STD_LOGIC_VECTOR(1 downto 0);
+		 RegSrc:				  out STD_LOGIC_VECTOR(1 downto 0);
+		 ALUControl:		  out STD_LOGIC_VECTOR(1 downto 0));
+end component;
 
-	COMPONENT datapath
-	PORT(
-		clk, reset, en_ARM : IN std_logic;
-		RegSrc : IN std_logic_vector(1 downto 0);
-		RegWrite : IN std_logic;
-		ImmSrc : IN std_logic_vector(1 downto 0);
-		ALUSrc : IN std_logic;
-		ALUControl : IN std_logic_vector(1 downto 0);
-		MemtoReg : IN std_logic;
-		PCSrc : IN std_logic;
-		Instr : IN std_logic_vector(31 downto 0);
-		ReadData : IN std_logic_vector(31 downto 0);          
-		ALUFlags : OUT std_logic_vector(3 downto 0);
-		PC : OUT std_logic_vector(31 downto 0);
-		ALUResult : OUT std_logic_vector(31 downto 0);
-		WriteData : OUT std_logic_vector(31 downto 0)
-		);
-	END COMPONENT;
+component datapath is  
+  port(clk, reset, en_ARM: in STD_LOGIC;
+       PCWrite:				in STD_LOGIC;
+		 RegWrite: 				in STD_LOGIC;
+		 MemWrite:				in STD_LOGIC;
+		 IRWrite:				in STD_LOGIC;
+		 AdrSrc:					in STD_LOGIC;
+		 ResultSrc:				in STD_LOGIC_VECTOR(1 downto 0);
+		 ALUSrcA:				in STD_LOGIC;
+		 ALUSrcB:				in STD_LOGIC_VECTOR(1 downto 0);
+		 ImmSrc:					in STD_LOGIC_VECTOR(1 downto 0);
+		 RegSrc:					in STD_LOGIC_VECTOR(1 downto 0);
+		 ALUControl:			in STD_LOGIC_VECTOR(1 downto 0);
+		 
+		 Instr:					out STD_LOGIC_VECTOR(31 downto 0);
+		 ALUFlags:				out STD_LOGIC_VECTOR(3 downto 0);
+		 PC:						out STD_LOGIC_VECTOR(8 downto 0);
+		 ALUResult:				out STD_LOGIC_VECTOR(31 downto 0);
+		 WriteData:				out STD_LOGIC_VECTOR(31 downto 0);
+		 ReadData:				out STD_LOGIC_VECTOR(31 downto 0));
+end component;
 
 	-- Signals needed to make connections between the datapath and controller
-	signal ALUFlags : std_logic_vector(3 downto 0);
-	signal RegSrc : std_logic_vector(1 downto 0);
-	signal RegWrite : std_logic; 
+	-- controller inputs
+	signal Instr : std_logic_vector(31 downto 0);
+	signal Cond : std_logic_vector(3 downto 0);
+	signal Op : std_logic_vector(1 downto 0);
+	signal Funct : std_logic_vector(5 downto 0);
+	signal Rd : std_logic_vector(3 downto 0);
+	signal Flags : std_logic_vector(3 downto 0);
+	
+	--controller outputs
+	signal PCWrite : std_logic;
+	signal RegWrite : std_logic;
+	signal MemWrite : std_logic;
+	signal IRWrite : std_logic;
+	signal AdrSrc : std_logic;
+	signal ResultSrc : std_logic_vector(1 downto 0);
+	signal ALUSrcA : std_logic;
+	signal ALUSrcB : std_logic_vector(1 downto 0);
 	signal ImmSrc : std_logic_vector(1 downto 0);
-	signal ALUSrc : std_logic;
+	signal RegSrc : std_logic_vector(1 downto 0);
 	signal ALUControl : std_logic_vector(1 downto 0);
-	signal MemtoReg  : std_logic;
-	signal PCSrc : std_logic;
-
+	
+	--datapath registers
+	signal ALUResult : std_logic_vector(31 downto 0);
+	signal WriteData : std_logic_vector(31 downto 0);
+	signal PC : std_logic_vector(8 downto 0);
+	signal ReadData : std_logic_Vector(31 downto 0);
 
 begin
+	PCOut <= PC(7 downto 0);
+	InstrOut <= Instr(27 downto 20);
+	ReadDataOut <= ReadData(7 downto 0); 
+	
+	-- Break out important data from instr
+	Cond <= Instr(31 downto 28);
+	Op <= Instr(27 downto 26);
+	Funct <= Instr(25 downto 20);
+	Rd <= Instr(15 downto 12);
 
 	-- Instantiate the Controller for the ARM Processor
 	Inst_controller: controller PORT MAP(
-		clk => clk,
-		reset => reset,
-		Instr => Instr(31 downto 12),
-		ALUFlags => ALUFlags,
-		RegSrc => RegSrc,
-		RegWrite => RegWrite,
-		ImmSrc => ImmSrc,
-		ALUSrc => ALUSrc,
-		ALUControl => ALUControl,
-		MemWrite => MemWrite,
-		MemtoReg => MemtoReg,
-		PCSrc => PCSrc
+		clk => clk, reset=>reset,
+		Cond=>Cond, ALUFlags=>Flags, Op=>Op, Funct=>Funct, Rd=>Rd,
+		PCWrite=>PCWrite, RegWrite=>RegWrite, MemWrite=>MemWrite,
+		
+		IRWrite=>IRWrite, AdrSrc=>AdrSrc, ResultSrc=>ResultSrc, ALUSrcA=>ALUSrcA,
+		ALUSrcB=>ALUSrcB, ImmSrc=>ImmSrc, RegSrc=>RegSrc, ALUControl=>ALUControl
 	);
 
 	-- Instantiate the Datapath for the ARM Processor
 	Inst_datapath: datapath PORT MAP(
-		clk => clk,
-		reset => reset,
-		en_ARM => en_ARM,
-		RegSrc => RegSrc,
-		RegWrite => RegWrite,
-		ImmSrc => ImmSrc,
-		ALUSrc => ALUSrc,
-		ALUControl => ALUControl,
-		MemtoReg => MemtoReg,
-		PCSrc => PCSrc,
-		ALUFlags => ALUFlags,
-		PC => PC,
-		Instr => Instr,
-		ALUResult => ALUResult,
-		WriteData => WriteData,
-		ReadData => ReadData
+		clk => clk, reset => reset, en_ARM => en_ARM,
+		RegWrite=>RegWrite, PCWrite=>PCWrite, MemWrite=>MemWrite, IRWrite=>IRWrite, 
+		AdrSrc=>AdrSrc,
+		ResultSrc=>ResultSrc, ALUSrcA=>ALUSrcA, ALUSrcB=>ALUSrcB, ImmSrc=>ImmSrc,
+		RegSrc=>RegSrc, ALUControl=>ALUControl,
+		
+		Instr=>Instr, ALUFlags=>Flags, 
+		PC=>PC, ALUResult=>ALUResult, WriteData=>WriteData, ReadData=>ReadData
 	);
 
 end Behavioral;
