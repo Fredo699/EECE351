@@ -98,7 +98,7 @@ int main()
           }
 		
 
-          if (a == MEM[0])
+          if (a == MEM[0] || a == MEM[2])
           {
                op = "01";
                MEM = true;
@@ -149,7 +149,7 @@ int main()
                     imm12 = std::string binary = std::bitset<12>(imm12).to_string();
                }
           }
-          else if (a == MEM[1])
+          else if (a == MEM[1] || a == MEM[3])
           {
                op = "01";
                MEM = true;
@@ -199,28 +199,6 @@ int main()
                     imm12 = f;
                     imm12 = std::string binary = std::bitset<12>(imm12).to_string();
                }
-          }
-          else if (a == MEM[2])
-          {
-               op = "01";
-               MEM = true;
-               
-               i = "";
-               p = "";
-               b = "1";
-               w = "";
-               l = "1";
-          }
-          else if (a == MEM[3])
-          {
-               op = "01";
-               MEM = true;
-               
-               i = "";
-               p = ""
-               b = "1";
-               w = "";
-               l = "0";
           }
           
 		cond = "1110";
