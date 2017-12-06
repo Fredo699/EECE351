@@ -22,17 +22,17 @@ int main(void)
      const string R3 [2][10] = { {"R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10"}, {"0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001", "1010"} };
      const string R4 [2][10] = { {"R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10"}, {"0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001", "1010"} };
     
-    string a;
-    string b;
-    string c;
-    string d;
-    string e;
-    string f;
+     string a;
+     string b;
+     string c;
+     string d;
+     string e;
+     string f;
     
-    string cond = "0000";
-    string instr = "00000000";
-    string cmd = "0";
-	string op = "0";
+     string cond = "0000";
+     string instr = "00000000";
+     string cmd = "0";
+     string op = "0";
 	string s = "0";
 	string i = "0";
 	string rn = "0000";
@@ -52,9 +52,9 @@ int main(void)
 	string il = "00";
 	string imm24 = "000000000000000000000000";
 	string lb = "0";
-    string pc = "0000";
+     string pc = "0000";
     
-    int toint = 0;
+     int toint = 0;
      
      bool MEM_set = false;
      bool i_set = false;
@@ -113,15 +113,15 @@ int main(void)
           }
 		
 
-          if (a == MEM[0] || a == MEM[2])
+          if (a == MEM[0] | a == MEM[2])
           {
                op = "01";
                MEM_set = true;
                
-               if (f.at(0) == "#")
+               if (f.at(0) == '#')
                {
                     i = "0";
-                    if (f.at(1) == "-")
+                    if (f.at(1) == '-')
                     {
                          u = "0";
                          f.erase(0);
@@ -158,7 +158,7 @@ int main(void)
                     }
                }
                
-               if (i=="0")
+               if (i == "0")
                {
                     imm12 = f;
                     
@@ -167,15 +167,15 @@ int main(void)
                     imm12 = bitset<12>(toint).to_string();
                }
           }
-          else if (a == MEM[1] || a == MEM[3])
+          else if (a == MEM[1] | a == MEM[3])
           {
                op = "01";
                MEM_set = true;
                
-               if (f.at(0) == "#")
+               if (f.at(0) == '#')
                {
                     i = "0";
-                    if (f.at(1) == "-")
+                    if (f.at(1) == '-')
                     {
                          u = "0";
                          f.erase(0);
@@ -212,7 +212,7 @@ int main(void)
                     }
                }
                
-               if (i=="0")
+               if (i == "0")
                {
                     imm12 = f;
                     
@@ -276,10 +276,10 @@ int main(void)
           {
                i = "1";
                     
-               //check for # symbol then erase it and set imm8
-               lb = d.at(0);
+               ////check for # symbol then erase it and set imm8
+               //lb = d.at(0);
 		
-               if (lb = "#")
+               if (d.at(0) == '#')
                {
                     d.erase(0);
                     rot = "0000";
@@ -310,7 +310,7 @@ int main(void)
                }
                else if (i == "0")
                {
-                    if ( rs != "0000")
+                    if (rs != "0000")
                     {
                          cout << cond << op << i << cmd << s << rn << rd << rs << "0" << sh << "1" << rm << endl;
                     }
