@@ -27,6 +27,8 @@ entity Decoder is
 			  Op : in  STD_LOGIC_VECTOR (1 downto 0);
            Funct : in  STD_LOGIC_VECTOR (5 downto 0);
            Rd : in  STD_LOGIC_VECTOR (3 downto 0);
+			  Src12 : in STD_LOGIC_VECTOR(11 downto 4);
+			  en_ARM : in STD_LOGIC;
 			  FlagW : out STD_LOGIC_VECTOR(1 downto 0);
 			  PCS : out STD_LOGIC;
 			  NextPC : out STD_LOGIC;
@@ -34,12 +36,15 @@ entity Decoder is
 			  MemW : out STD_LOGIC;
 			  IRWrite : out STD_LOGIC;
 			  AdrSrc : out STD_LOGIC;
+			  decode_state: out STD_LOGIC;
 			  ResultSrc : out STD_LOGIC_VECTOR(1 downto 0);
 			  ALUSrcA : out STD_LOGIC;
 			  ALUSrcB : out STD_LOGIC_VECTOR(1 downto 0);
 			  ImmSrc : out STD_LOGIC_VECTOR(1 downto 0);
 			  RegSrc : out STD_LOGIC_VECTOR(1 downto 0);
-			  ALUControl : out STD_LOGIC_VECTOR(1 downto 0));
+			  ALUControl : out STD_LOGIC_VECTOR(2 downto 0);
+			  sh : out STD_LOGIC_VECTOR(1 downto 0);
+			  shamt5 : out STD_LOGIC_VECTOR(4 downto 0));
 end Decoder;
 
 architecture Behavioral of Decoder is
@@ -57,14 +62,17 @@ architecture Behavioral of Decoder is
 												  --       = '1' --> Src2 is an immediate
 	alias S   : std_logic is Funct(0); -- S-bit = '1' --> set condition flags
 	
-	signal MainDecOp : std_logic_vector(3 downto 0);
+	
 	signal Controls  : std_logic_vector(9 downto 0);
 	
 	signal ALUDecOp : std_logic_vector(5 downto 0);
+	
+	signal ShiftDecOp : std_logic_vector(3 downto 0);
 
 	signal RegWsig : std_logic;
 	signal Branch : std_logic;
 	signal ALUOp : std_logic;
+	signal mulsig : std_logic;
 	
 	signal state : state_type := Fetch;
 	signal next_state : state_type := Fetch;
@@ -75,20 +83,14 @@ begin
 	-- PCS = 1 if PC is written by an instruction or branch (B)
 	PCS <= '1' when (Rd = x"F" and RegWsig = '1') or Branch = '1' else '0';
 	
-	-- Instr Decoder
-	MainDecOp <= Op & S & I;
-	
 	--RegSrc control
-	with MainDecOp select
-		RegSrc <= "10" when "0101" | "0111" | "0100" | "0110" | "0010" | "0011", -- LDR, STR, DP Immediate
-					 "00" when "0000" | "0001", -- DP Register
-					 "11" when "1000" | "1001" | "1010" | "1011"; -- B
+	with Op select
+		RegSrc <= "01" when "10",
+					 "10" when "01",
+					 "00" when others;
 	
 	-- ImmSrc control
-	with MainDecOp select
-		ImmSrc <= "01" when "0101" | "0111" | "0100" | "0110", -- LDR, STR
-					 "00" when "0010" | "0011" | "0000" | "0001", -- DP immediate, DP Register
-					 "10" when "1000" | "1001" | "1010" | "1011"; -- B
+	ImmSrc <= Op;
 	
 	RegW <= RegWsig; -- RegW output
 
@@ -96,12 +98,44 @@ begin
 	ALUDecOp <= ALUOp & Funct(4 downto 1) & Funct(0);
 	
 	-- ALUControl sets the operation to be performed by ALU
-	with ALUDecOp select
-	ALUControl <=  "00" when "101000" | "101001",  -- ADD
-						"01" when "100100" | "100101",  -- SUB
-						"10" when "100000" | "100001",  -- AND
-						"11" when "111000" | "111001",  -- ORR
-						"00" when others;  -- Not DP
+--	with ALUDecOp select
+--	ALUControl <=  "000" when "101000" | "101001",  					-- ADD
+--						"001" when "100100" | "100101" | "110101",  		-- SUB/CMP
+--						"010" when "100000" | "100001",  					-- AND
+--						"011" when "111000" | "111001",  					-- ORR
+--						"100" when "100010" | "100011",						-- EOR
+--						"101" when "111110" | "111111",						-- MVN
+--						"110" when "100000",										-- MUL
+--						"111" when "111010" | "111011",						-- MOV
+--						"000" when others;  -- Not DP
+	
+	mulsig <= '1' when Src12(7 downto 4) = "1001" else '0';
+	process(ALUOp, cmd, mulsig) begin
+		case ALUOp & cmd is
+			when "10100"=> -- ADD
+				ALUControl <= "000";
+			when "10010"=> -- SUB
+				ALUControl <= "001";
+			when "11010"=> -- CMP
+				ALUControl <= "001";
+			when "11100"=> -- ORR
+				ALUControl <= "011";
+			when "10001"=> -- EOR
+				ALUControl <= "100";
+			when "11111"=> -- MVN
+				ALUControl <= "101";
+			when "11101"=> -- MOV
+				ALUControl <= "111";
+			when "10000"=>
+				if mulsig = '1' then
+					ALUControl <= "110"; -- MUL
+				else
+					ALUControl <= "010"; -- AND
+				end if;
+			when others=>
+				ALUControl <= "000";
+			end case;
+	end process;
 
 	-- FlagW: Flag Write Signal
 	-- Asserted when ALUFlags should be saved
@@ -112,23 +146,39 @@ begin
 				 "11" when "101001",  -- ADD     
 				 "00" when "100100",  -- SUB     
 				 "11" when "100101",  -- SUB
+				 "11" when "110101",  -- CMP
 				 "00" when "100000",  -- AND
 				 "10" when "100001",  -- AND
 				 "00" when "111000",  -- ORR
 				 "10" when "111001",  -- ORR
 				 "00" when others;    -- Not DP
 	
-	process(state) begin -- state machine
-	RegWsig	 <= '0';
-	MemW		 <= '0';
-	IRWrite	 <= '0';
-	AdrSrc 	 <= '0';
-	AluSrcA 	 <= '1';
-	AluSrcB 	 <= "10";
-	ALUOp 	 <= '0';
-	ResultSrc <= "10";
-	NextPC 	 <= '0';
-	Branch	 <= '0';
+	
+	ShiftDecOp <= Op & I & Src12(4);
+	
+	-- TODO: This does NOT  implement register shifted register properly
+	with ShiftDecOp select
+	shamt5 <= '0' & Src12(11 downto 8) when "0001" | "0010" | "0011",							 	-- DP, Register-shifted Register	
+				 Src12(11 downto 7) when "0000" | "0100",
+				 (others=>'0') when others;	-- Other shifts
+	
+	with ShiftDecOp select
+	sh <= Src12(6 downto 5) when "0000" | "0001" | "0110", -- command-defined shift
+			"11" when "0010" | "0011",								 -- rotate right
+			"00" when others;
+				 
+	process(state, Op, Funct) begin -- state machine
+	RegWsig		 <= '0';
+	MemW			 <= '0';
+	IRWrite		 <= '0';
+	AdrSrc 		 <= '0';
+	decode_state <= '0';
+	AluSrcA 		 <= '1';
+	AluSrcB 		 <= "10";
+	ALUOp 		 <= '0';
+	ResultSrc	 <= "10";
+	NextPC 		 <= '0';
+	Branch		 <= '0';
 	
 	case state is
 		when Fetch=>
@@ -137,11 +187,14 @@ begin
 			NextPC <= '1';
 		
 		when Decode=>
+			decode_state <= '1';
 			AluSrcA <= '1';
 			AluSrcB <= "10";
 			ALUOp <= '0';
 			ResultSrc <= "10";
-			if Op = "01" then
+			if en_ARM = '0' then
+				next_state <= Decode;
+			elsif Op = "01" then
 				next_state <= MemAdr;
 			elsif Op = "00" and I = '0' then
 				next_state <= ExecuteR;
@@ -195,7 +248,11 @@ begin
 		
 		when ALUWB=>
 			ResultSrc <= "00";
-			RegWsig <= '1';
+			if cmd = "1010" then
+				RegWsig <= '0';
+			else
+				RegWsig <= '1';
+			end if;
 			next_state <= Fetch;
 		
 		when MemWB=>

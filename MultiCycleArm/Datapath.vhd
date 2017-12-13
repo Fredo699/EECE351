@@ -23,17 +23,21 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity datapath is  
   port(clk, reset, en_ARM: in STD_LOGIC;
+		 SWITCH:					in STD_LOGIC_VECTOR(7 downto 0);
        PCWrite:				in STD_LOGIC;
 		 RegWrite: 				in STD_LOGIC;
 		 MemWrite:				in STD_LOGIC;
 		 IRWrite:				in STD_LOGIC;
 		 AdrSrc:					in STD_LOGIC;
+		 decode_state:			in STD_LOGIC;
 		 ResultSrc:				in STD_LOGIC_VECTOR(1 downto 0);
 		 ALUSrcA:				in STD_LOGIC;
 		 ALUSrcB:				in STD_LOGIC_VECTOR(1 downto 0);
 		 ImmSrc:					in STD_LOGIC_VECTOR(1 downto 0);
 		 RegSrc:					in STD_LOGIC_VECTOR(1 downto 0);
-		 ALUControl:			in STD_LOGIC_VECTOR(1 downto 0);
+		 ALUControl:			in STD_LOGIC_VECTOR(2 downto 0);
+		 sh:						in STD_LOGIC_VECTOR(1 downto 0);
+		 shamt5:					in STD_LOGIC_VECTOR(4 downto 0);
 		 
 		 Instr:					out STD_LOGIC_VECTOR(31 downto 0);
 		 ALUFlags:				out STD_LOGIC_VECTOR(3 downto 0);
@@ -72,23 +76,31 @@ architecture Behavioral of Datapath is
 	END COMPONENT;
 
 	COMPONENT ALU
-	PORT(
-		A : IN std_logic_vector(31 downto 0);
-		B : IN std_logic_vector(31 downto 0);
-		ALUControl : IN std_logic_vector(1 downto 0);          
-		Result : OUT std_logic_vector(31 downto 0);
-		ALUFlags : OUT std_logic_vector(3 downto 0)
-		);
+	Generic (data_size : positive := 32);
+	port ( A 			: in std_logic_vector(data_size - 1 downto 0);
+			 B 			: in std_logic_vector(data_size - 1 downto 0);
+			 ALUControl : in std_logic_vector(2 downto 0);
+			 result 		: out std_logic_vector(data_size - 1 downto 0);
+			 ALUFlags 	: out std_logic_vector(3 downto 0));
 	END COMPONENT;
 	
+	component shifter is
+    Port ( D_in : in  STD_LOGIC_VECTOR (31 downto 0);
+           shamt5 : in  STD_LOGIC_VECTOR (4 downto 0);
+           sh : in  STD_LOGIC_VECTOR (1 downto 0);
+           D_out : out  STD_LOGIC_VECTOR (31 downto 0));
+	end component;
+	
 	--PC
-	signal PC_int: std_logic_vector(7 downto 0);
+	signal PC_int: std_logic_vector(8 downto 0) := (others=>'0');
 	
 	--Instr/Data Memory
-	signal Adr : std_logic_vector(7 downto 0);
+	signal Adr : std_logic_vector(8 downto 0);
+	signal A_int : std_logic_vector(8 downto 0);
 	signal RDsig : std_logic_vector(31 downto 0);
 	signal Instr_int : std_logic_vector(31 downto 0);
 	signal Data : std_logic_vector(31 downto 0);
+	signal DM_Addr : std_logic_vector(8 downto 0);
 	
 	--Register File
 	signal RA1mux : std_logic_vector(3 downto 0);
@@ -105,30 +117,34 @@ architecture Behavioral of Datapath is
 	signal ALUOut : std_logic_vector(31 downto 0);
 	signal Result : std_logic_vector(31 downto 0);
 	
-	--Zero extended immediate
+	--Immediate signals
 	signal ExtImm : std_logic_vector(31 downto 0);
+	signal ShiftImm: std_logic_vector(31 downto 0);
 	
 begin
 	--send internal signals out
 	PC <= PC_int;
 	Instr <= Instr_int;
 	WriteData <= WriteDataSig;
-	ReadData <= Rd1Sig;
+	ReadData <= Data;
 	ALUResult <= ALUResult_int;
 	
 	--instr/data mem muxes
-	Adr <= PC_int when AdrSrc='0' else Result(7 downto 0);
+	Adr <= PC_int when AdrSrc='0' else DM_Addr;
+	DM_Addr <= std_logic_vector(resize(unsigned(SWITCH), DM_Addr'length))
+						when en_ARM = '0' and reset = '0' and decode_state = '1'
+						else Result(8 downto 0);
 	
 	--Register file muxes
 	RA1mux <= Instr_int(19 downto 16) when RegSrc(0)='0' else x"F";
 	RA2mux <= Instr_int(3 downto 0) when RegSrc(1)='0' else Instr_int(15 downto 12);
 	
 	--ALU Muxes
-	SrcA <= A when ALUSrcA = '0' else x"000000" & PC_int;
+	SrcA <= A when ALUSrcA = '0' else x"00000" & "000" & PC_int;
 	
 	with ALUSrcB select
 		SrcB <= WriteDataSig when "00",
-				  ExtImm when "01",
+				  ShiftImm when "01",
 				  x"00000004" when others;
 	
 	--zero-extended immediate mux
@@ -143,44 +159,63 @@ begin
 					 Data when "01",
 					 ALUResult_int when others;
 	
-	process(clk, Result) begin --PC control
+	process(clk, reset, Result) begin --PC control
 		if rising_edge(clk) then
-			if PCWrite = '1' then
-				PC_int <= Result(7 downto 0);
+			if reset = '1' then
+				PC_int <= (others=>'0');
+			elsif PCWrite = '1' and en_ARM='1' then
+				PC_int <= Result(8 downto 0);
 			end if;
 		end if;
 	end process;
 	
-	process(clk, RDsig, IRWrite) begin --Fetch instr
+	process(clk, reset, RDsig, IRWrite) begin --Fetch instr
 		if rising_edge(clk) then
-			if IRWrite = '1' then
+			if reset = '1' then
+				Instr_int <= (others=>'0');
+			elsif IRWrite = '1' then
 				Instr_int <= RDsig;
 			end if;
 		end if;
 	end process;
 	
-	process(clk, RD1sig, RD2sig) begin --clock A and writedatasig
+	process(clk, reset, RD1sig, RD2sig) begin --clock A and writedatasig
 		if rising_edge(clk) then
-			A <= RD1sig;
-			WriteDataSig <= RD2sig;
+			if reset = '1' then
+				A <= (others=>'0');
+				WriteDataSig <= (others=>'0');
+			else
+				A <= RD1sig;
+				WriteDataSig <= RD2sig;
+			end if;
 		end if;
 	end process;
 	
-	process(clk, ALUResult_int) begin --clock ALUOut
+	process(clk, reset, ALUResult_int) begin --clock ALUOut
 		if rising_edge(clk) then
-			ALUOut <= ALUResult_int;
+			if reset = '1' then
+				ALUOut <= (others=>'0');
+			else
+				ALUOut <= ALUResult_int;
+			end if;
 		end if;
 	end process;
 	
-	process(clk, RDsig) begin --clock Data
+	process(clk, reset, RDsig) begin --clock Data
 		if rising_edge(clk) then
-			Data <= RDsig;
+			if reset = '1' then
+				Data <= (others=>'0');
+			else
+				Data <= RDsig;
+			end if;
 		end if;
 	end process;
+	
+	A_int <= '0' & SWITCH when en_ARM='0' else "00" & Adr(8 downto 2);
 	
 	mem: Memory PORT MAP(
 		clk=>clk,
-		A=>Adr,
+		A=>A_int,
 		WE=>MemWrite, WD=>WriteDataSig,
 		RD=>RDsig);
 	
@@ -195,5 +230,10 @@ begin
 		A=>SrcA, B=>SrcB,
 		ALUControl=>ALUControl,
 		Result=>ALUResult_int, ALUFlags=>ALUFlags);
+	
+	i_shifter : Shifter PORT MAP(
+		D_in=>ExtImm,
+		sh=>sh, shamt5=>shamt5,
+		D_out=>ShiftImm);
 end Behavioral;
 

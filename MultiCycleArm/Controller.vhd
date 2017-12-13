@@ -31,6 +31,8 @@ entity controller is -- multicycle control decoder
 		 Op:					  in STD_LOGIC_VECTOR(1 downto 0);
 		 Funct:				  in STD_LOGIC_VECTOR(5 downto 0);
 		 Rd:					  in STD_LOGIC_VECTOR(3 downto 0);
+		 Src12:				  in STD_LOGIC_VECTOR(11 downto 4);
+		 en_ARM:				  in STD_LOGIC;
 		 
 		 --Cond Logic output:
 		 PCWrite:			  out STD_LOGIC;
@@ -40,22 +42,27 @@ entity controller is -- multicycle control decoder
 		 --Decoder Output:
 		 IRWrite:			  out STD_LOGIC;
 		 AdrSrc:				  out STD_LOGIC;
+		 decode_state: 	  out STD_LOGIC;
 		 ResultSrc:			  out STD_LOGIC_VECTOR(1 downto 0);
 		 ALUSrcA:			  out STD_LOGIC;
 		 ALUSrcB:			  out STD_LOGIC_VECTOR(1 downto 0);
 		 ImmSrc:				  out STD_LOGIC_VECTOR(1 downto 0);
 		 RegSrc:				  out STD_LOGIC_VECTOR(1 downto 0);
-		 ALUControl:		  out STD_LOGIC_VECTOR(1 downto 0));
+		 ALUControl:		  out STD_LOGIC_VECTOR(2 downto 0);
+		 sh : 				  out STD_LOGIC_VECTOR(1 downto 0);
+		 shamt5 : 			  out STD_LOGIC_VECTOR(4 downto 0));
 end controller;
 
 architecture Behavioral of Controller is
 
 component Decoder is
     Port ( clk : in STD_LOGIC;
-			  reset: in STD_LOGIC;
+			  reset : in STD_LOGIC;
 			  Op : in  STD_LOGIC_VECTOR (1 downto 0);
            Funct : in  STD_LOGIC_VECTOR (5 downto 0);
            Rd : in  STD_LOGIC_VECTOR (3 downto 0);
+			  Src12 : in STD_LOGIC_VECTOR(11 downto 4);
+			  en_ARM : in STD_LOGIC;
 			  FlagW : out STD_LOGIC_VECTOR(1 downto 0);
 			  PCS : out STD_LOGIC;
 			  NextPC : out STD_LOGIC;
@@ -63,14 +70,16 @@ component Decoder is
 			  MemW : out STD_LOGIC;
 			  IRWrite : out STD_LOGIC;
 			  AdrSrc : out STD_LOGIC;
+			  decode_state: out STD_LOGIC;
 			  ResultSrc : out STD_LOGIC_VECTOR(1 downto 0);
 			  ALUSrcA : out STD_LOGIC;
 			  ALUSrcB : out STD_LOGIC_VECTOR(1 downto 0);
 			  ImmSrc : out STD_LOGIC_VECTOR(1 downto 0);
 			  RegSrc : out STD_LOGIC_VECTOR(1 downto 0);
-			  ALUControl : out STD_LOGIC_VECTOR(1 downto 0));
+			  ALUControl : out STD_LOGIC_VECTOR(2 downto 0);
+			  sh : out STD_LOGIC_VECTOR(1 downto 0);
+			  shamt5 : out STD_LOGIC_VECTOR(4 downto 0));
 end component;
-
 
 component Cond_Logic is
     Port ( clk : in  STD_LOGIC;
@@ -101,20 +110,20 @@ begin
 		clk=>clk, reset=>reset,
 		
 		--input
-		Op=>Op, Funct=>Funct, Rd=>Rd,
+		Op=>Op, Funct=>Funct, Rd=>Rd, Src12=>Src12, en_ARM=>en_ARM,
 		
 		--output (sigs)
 		FlagW=>FlagW, PCS=>PCS, NextPC=>NextPC, RegW=>RegW, MemW=>MemW,
 		
 		--output (nodes)
-		IRWrite=>IRWrite, AdrSrc=>AdrSrc, ResultSrc=>ResultSrc,
+		IRWrite=>IRWrite, AdrSrc=>AdrSrc, decode_state=>decode_state, ResultSrc=>ResultSrc,
 		ALUSrcA=>ALUSrcA, ALUSrcB=>ALUSrcB, ImmSrc=>ImmSrc,
-		RegSrc=>RegSrc, ALUControl=>ALUControl
+		RegSrc=>RegSrc, ALUControl=>ALUControl, sh=>sh, shamt5=>shamt5
 	);
 
 	-- Instantiate the Conditional Logic Function of the Controller
 	Inst_Cond_Logic: Cond_Logic PORT MAP(
-		clk => clk, reset => reset,
+		clk=>clk, reset=>reset,
 		
 		--input (nodes)
 		Cond=>Cond, ALUFlags=>ALUFlags,
