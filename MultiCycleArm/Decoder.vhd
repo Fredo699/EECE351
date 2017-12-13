@@ -158,16 +158,16 @@ begin
 	
 	-- TODO: This does NOT  implement register shifted register properly
 	with ShiftDecOp select
-	shamt5 <= '0' & Src12(11 downto 8) when "0001" | "0010" | "0011",							 	-- DP, Register-shifted Register	
-				 Src12(11 downto 7) when "0000" | "0100",
-				 (others=>'0') when others;	-- Other shifts
+	shamt5 <= '0' & Src12(11 downto 8) when "0010" | "0011",
+				 Src12(11 downto 7) when "0000" | "1100",
+				 (others=>'0') when others;
 	
 	with ShiftDecOp select
-	sh <= Src12(6 downto 5) when "0000" | "0001" | "0110", -- command-defined shift
-			"11" when "0010" | "0011",								 -- rotate right
+	sh <= Src12(6 downto 5) when "0000" | "1100",
+			"11" when "0010" | "0011",
 			"00" when others;
 				 
-	process(state, Op, Funct) begin -- state machine
+	process(state, Op, Funct, en_ARM) begin -- state machine
 	RegWsig		 <= '0';
 	MemW			 <= '0';
 	IRWrite		 <= '0';

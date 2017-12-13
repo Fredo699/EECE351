@@ -76,6 +76,7 @@ process(ALUControl, A_int, B_int, result_int) begin
 		cout <= result_int(data_size);
 	elsif ALUControl = "111" then -- SRCB
 		result_int <= resize(B_int, data_size + 1);
+		cout <= '0';
 	else
 		result_int <= to_signed(0, data_size + 1);
 		cout <= '0';

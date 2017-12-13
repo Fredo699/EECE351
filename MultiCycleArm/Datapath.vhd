@@ -163,7 +163,7 @@ begin
 		if rising_edge(clk) then
 			if reset = '1' then
 				PC_int <= (others=>'0');
-			elsif PCWrite = '1' and en_ARM='1' then
+			elsif PCWrite = '1' then
 				PC_int <= Result(8 downto 0);
 			end if;
 		end if;
