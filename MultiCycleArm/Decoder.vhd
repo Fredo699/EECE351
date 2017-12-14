@@ -167,7 +167,7 @@ begin
 			"11" when "0010" | "0011",
 			"00" when others;
 				 
-	process(state, Op, Funct, en_ARM) begin -- state machine
+	process(state, Op, Funct, I, en_ARM) begin -- state machine
 	RegWsig		 <= '0';
 	MemW			 <= '0';
 	IRWrite		 <= '0';
@@ -194,6 +194,7 @@ begin
 			ResultSrc <= "10";
 			if en_ARM = '0' then
 				next_state <= Decode;
+--				IRWrite <= '1';
 			elsif Op = "01" then
 				next_state <= MemAdr;
 			elsif Op = "00" and I = '0' then
@@ -206,7 +207,13 @@ begin
 		
 		when MemAdr=>
 			AluSrcA <= '0';
-			AluSrcB <= "01";
+			
+			if I = '0' then
+				ALUSrcB <= "01";
+			else
+				ALUSrcB <= "00";
+			end if;
+			
 			ALUOp <= '0';
 			
 			if S = '1' then
@@ -232,7 +239,7 @@ begin
 			AluSrcB <= "01";
 			ALUOp <= '0';
 			ResultSrc <= "10";
-			Branch <= '0';
+			Branch <= '1';
 			next_state <= Fetch;
 		
 		when MemRead=>

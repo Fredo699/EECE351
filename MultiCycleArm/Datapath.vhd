@@ -40,6 +40,7 @@ entity datapath is
 		 shamt5:					in STD_LOGIC_VECTOR(4 downto 0);
 		 
 		 Instr:					out STD_LOGIC_VECTOR(31 downto 0);
+		 InstrVol:				out STD_LOGIC_VECTOR(31 downto 0);
 		 ALUFlags:				out STD_LOGIC_VECTOR(3 downto 0);
 		 PC:						out STD_LOGIC_VECTOR(8 downto 0);
 		 ALUResult:				out STD_LOGIC_VECTOR(31 downto 0);
@@ -99,8 +100,8 @@ architecture Behavioral of Datapath is
 	signal A_int : std_logic_vector(8 downto 0);
 	signal RDsig : std_logic_vector(31 downto 0);
 	signal Instr_int : std_logic_vector(31 downto 0);
+	signal InstrVol_int : std_logic_vector(31 downto 0); -- Volatile instruction. (doesn't check IRWrite)
 	signal Data : std_logic_vector(31 downto 0);
-	signal DM_Addr : std_logic_vector(8 downto 0);
 	
 	--Register File
 	signal RA1mux : std_logic_vector(3 downto 0);
@@ -125,15 +126,16 @@ begin
 	--send internal signals out
 	PC <= PC_int;
 	Instr <= Instr_int;
+	InstrVol <= InstrVol_int;
 	WriteData <= WriteDataSig;
 	ReadData <= Data;
 	ALUResult <= ALUResult_int;
 	
 	--instr/data mem muxes
-	Adr <= PC_int when AdrSrc='0' else DM_Addr;
-	DM_Addr <= std_logic_vector(resize(unsigned(SWITCH), DM_Addr'length))
+	Adr <= std_logic_vector(resize(unsigned(SWITCH), Adr'length))
 						when en_ARM = '0' and reset = '0' and decode_state = '1'
-						else Result(8 downto 0);
+						else "00" & PC_int(8 downto 2) when AdrSrc = '0'
+						else Result(10 downto 2);
 	
 	--Register file muxes
 	RA1mux <= Instr_int(19 downto 16) when RegSrc(0)='0' else x"F";
@@ -149,7 +151,7 @@ begin
 	
 	--zero-extended immediate mux
 	with ImmSrc select
-		ExtImm <= x"00" & Instr_int(23 downto 0) when "10",
+		ExtImm <= (31 downto 26 => Instr_int(23)) & Instr_int(23 downto 0) & "00" when "10",
 					 x"000000" & Instr_int(7 downto 0) when "00",
 					 x"00000" & Instr_int(11 downto 0) when others;
 	
@@ -175,6 +177,16 @@ begin
 				Instr_int <= (others=>'0');
 			elsif IRWrite = '1' then
 				Instr_int <= RDsig;
+			end if;
+		end if;
+	end process;
+	
+	process(clk, reset, RDsig, IRWrite) begin --Fetch instr
+		if rising_edge(clk) then
+			if reset = '1' then
+				InstrVol_int <= (others=>'0');
+			else
+				InstrVol_int <= RDsig;
 			end if;
 		end if;
 	end process;
@@ -211,7 +223,7 @@ begin
 		end if;
 	end process;
 	
-	A_int <= '0' & SWITCH when en_ARM='0' else "00" & Adr(8 downto 2);
+	A_int <= Adr;
 	
 	mem: Memory PORT MAP(
 		clk=>clk,

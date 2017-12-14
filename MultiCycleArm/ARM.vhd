@@ -84,6 +84,7 @@ component datapath is
 		 shamt5:					in STD_LOGIC_VECTOR(4 downto 0);
 		 
 		 Instr:					out STD_LOGIC_VECTOR(31 downto 0);
+		 InstrVol:				out STD_LOGIC_VECTOR(31 downto 0);
 		 ALUFlags:				out STD_LOGIC_VECTOR(3 downto 0);
 		 PC:						out STD_LOGIC_VECTOR(8 downto 0);
 		 ALUResult:				out STD_LOGIC_VECTOR(31 downto 0);
@@ -94,6 +95,7 @@ end component;
 	-- Signals needed to make connections between the datapath and controller
 	-- controller inputs
 	signal Instr : std_logic_vector(31 downto 0);
+   signal InstrVol : std_logic_vector(31 downto 0);
 	signal Cond : std_logic_vector(3 downto 0);
 	signal Op : std_logic_vector(1 downto 0);
 	signal Funct : std_logic_vector(5 downto 0);
@@ -125,7 +127,7 @@ end component;
 
 begin
 	PCOut <= PC(7 downto 0);
-	InstrOut <= Instr(27 downto 20);
+	InstrOut <= Instr(27 downto 20) when en_ARM = '1' else InstrVol(27 downto 20);
 	ReadDataOut <= ReadData(7 downto 0); 
 	
 	-- Break out important data from instr
@@ -157,7 +159,7 @@ begin
 		ResultSrc=>ResultSrc, ALUSrcA=>ALUSrcA, ALUSrcB=>ALUSrcB, ImmSrc=>ImmSrc,
 		RegSrc=>RegSrc, ALUControl=>ALUControl, sh=>sh, shamt5=>shamt5,
 		
-		Instr=>Instr, ALUFlags=>Flags, 
+		Instr=>Instr, InstrVol=>InstrVol, ALUFlags=>Flags, 
 		PC=>PC, ALUResult=>ALUResult, WriteData=>WriteData, ReadData=>ReadData
 	);
 
